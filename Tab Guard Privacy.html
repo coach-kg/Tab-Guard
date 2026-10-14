@@ -1,0 +1,106 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Tab Guard Privacy</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400&display=swap">
+<style>
+  /* Layout: one quiet reading column, a language switch on top, plain sections. */
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --fg: #1b2230; --muted: #5a6476; --line: #dde2ea; --accent: #2f62d9;
+    --body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg: #0e121a; --panel: #151b26; --fg: #e7ebf3; --muted: #9aa4b6; --line: #262f3f; --accent: #7fa4ff; color-scheme: dark } }
+  :root[data-theme="dark"] {
+    --bg: #0e121a; --panel: #151b26; --fg: #e7ebf3; --muted: #9aa4b6; --line: #262f3f; --accent: #7fa4ff; color-scheme: dark }
+  body { background: var(--bg); color: var(--fg); font: 16px/1.65 var(--body);
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  main { max-width: 680px; margin: 0 auto; padding-block: 40px 64px; display: grid; gap: 28px; }
+  header { display: grid; gap: 8px; }
+  .eyebrow { font: 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  h1 { font-size: 30px; line-height: 1.2; margin: 0; text-wrap: balance; }
+  h2 { font-size: 18px; margin: 0 0 6px; }
+  p, ul { margin: 0; }
+  ul { padding-left: 1.2em; display: grid; gap: 6px; }
+  .lang { display: flex; gap: 8px; }
+  .lang button { font: 14px var(--body); padding: 6px 14px; border-radius: 999px; cursor: pointer;
+    background: transparent; color: var(--muted); border: 1px solid var(--line); }
+  .lang button[aria-pressed="true"] { color: var(--fg); border-color: var(--accent); }
+  .lang button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .short { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
+  .short p { font-size: 17px; }
+  section { display: grid; gap: 4px; }
+  code { font: 14px var(--mono); }
+  .meta { font: 13px var(--mono); color: var(--muted); }
+</style>
+
+<main>
+  <header>
+    <div class="eyebrow">Tab Guard · browser extension</div>
+    <h1 data-l="en">Privacy policy</h1><h1 data-l="de" hidden>Datenschutzerklärung</h1>
+    <div class="meta" data-l="en">Last updated: 14 October 2026</div><div class="meta" data-l="de" hidden>Stand: 14. Oktober 2026</div>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" id="l-en" aria-pressed="true">English</button>
+      <button type="button" id="l-de" aria-pressed="false">Deutsch</button>
+    </div>
+  </header>
+
+  <!-- ENGLISH -->
+  <div class="short" data-l="en"><p><strong>Tab Guard collects no data.</strong> Everything it does happens on your device. It has no server, no account, no analytics and no tracking, and it sends nothing anywhere.</p></div>
+  <section data-l="en"><h2>What it looks at, on your device only</h2>
+    <ul>
+      <li>The address of the tab you are on, to decide whether a site is trusted, watched, redirected or blocked.</li>
+      <li>Scrolling, typing, focus and video playback on the pages you visit, to notice doomscrolling. These signals are used in the moment and not stored.</li>
+      <li>Page structure (feeds, thumbnails, videos, a site's own rating label) to slow feeds down, stop previews and, if you turn on the content filter, recognise adult sites.</li>
+      <li>With the content filter on: the text in a search box, checked against a word list on your device. Searches on Google, Bing, DuckDuckGo, Brave Search, Yahoo and SearXNG get their own SafeSearch parameter added to the address. The search goes to the same engine you chose; Tab Guard sends nothing extra.</li>
+    </ul></section>
+  <section data-l="en"><h2>What it stores</h2>
+    <p>Your settings and lists (trusted sites, blocklist, redirects, your own search terms, an imported block list), timers and counters, all in your browser's local extension storage on your device.</p></section>
+  <section data-l="en"><h2>What it never does</h2>
+    <ul>
+      <li>No network requests of its own, no cookies, no fingerprinting, no advertising IDs.</li>
+      <li>No sign-up and no personal data required.</li>
+      <li>No record or report of the sites you visit.</li>
+    </ul></section>
+  <section data-l="en"><h2>Deleting your data</h2>
+    <p>Everything lives in your browser profile. Removing the extension deletes it. Settings can be exported, changed or reset at any time from the extension's settings page.</p></section>
+  <section data-l="en"><h2>Contact</h2>
+    <p>Questions go to the developer through the support link on the extension's page in the Chrome Web Store or on Firefox Add-ons (developer name: klgg).</p></section>
+
+  <!-- DEUTSCH -->
+  <div class="short" data-l="de" hidden><p><strong>Tab Guard erhebt keine Daten.</strong> Alles passiert auf deinem Gerät. Es gibt keinen Server, kein Konto, keine Statistik und kein Tracking, und es wird nichts irgendwohin gesendet.</p></div>
+  <section data-l="de" hidden><h2>Was die Erweiterung liest, nur auf deinem Gerät</h2>
+    <ul>
+      <li>Die Adresse des aktuellen Tabs, um zu entscheiden, ob eine Seite vertraut, beobachtet, umgeleitet oder gesperrt ist.</li>
+      <li>Scrollen, Tippen, Fokus und Videowiedergabe auf den besuchten Seiten, um Doomscrolling zu bemerken. Diese Signale werden im Moment genutzt und nicht gespeichert.</li>
+      <li>Den Aufbau einer Seite (Feeds, Vorschaubilder, Videos, das eigene Alters-Label einer Seite), um Feeds zu bremsen, Vorschauen zu stoppen und, wenn du den Jugendschutz einschaltest, Adult-Seiten zu erkennen.</li>
+      <li>Mit eingeschaltetem Jugendschutz: den Text im Suchfeld, abgeglichen mit einer Wortliste auf deinem Gerät. Bei Google, Bing, DuckDuckGo, Brave Search, Yahoo und SearXNG wird der SafeSearch-Parameter der jeweiligen Suchmaschine an die Adresse angehängt. Die Suche geht an dieselbe Suchmaschine, die du gewählt hast; Tab Guard sendet nichts zusätzlich.</li>
+    </ul></section>
+  <section data-l="de" hidden><h2>Was gespeichert wird</h2>
+    <p>Deine Einstellungen und Listen (vertraute Seiten, Blockliste, Weiterleitungen, eigene Suchbegriffe, eine importierte Sperrliste), Timer und Zähler, alles im lokalen Erweiterungsspeicher deines Browsers auf deinem Gerät.</p></section>
+  <section data-l="de" hidden><h2>Was nie passiert</h2>
+    <ul>
+      <li>Keine eigenen Netzwerkanfragen, keine Cookies, kein Fingerprinting, keine Werbe-IDs.</li>
+      <li>Keine Anmeldung, keine persönlichen Daten nötig.</li>
+      <li>Keine Aufzeichnung und keine Meldung der besuchten Seiten.</li>
+    </ul></section>
+  <section data-l="de" hidden><h2>Daten löschen</h2>
+    <p>Alles liegt in deinem Browserprofil. Wenn du die Erweiterung entfernst, ist es gelöscht. Einstellungen kannst du jederzeit in den Einstellungen der Erweiterung exportieren, ändern oder zurücksetzen.</p></section>
+  <section data-l="de" hidden><h2>Kontakt</h2>
+    <p>Fragen an den Entwickler über den Support-Link auf der Seite der Erweiterung im Chrome Web Store oder bei Firefox Add-ons (Entwicklername: klgg).</p></section>
+</main>
+
+<script>
+  const show = (l) => {
+    document.querySelectorAll("[data-l]").forEach(el => { el.hidden = el.dataset.l !== l; });
+    document.getElementById("l-en").setAttribute("aria-pressed", String(l === "en"));
+    document.getElementById("l-de").setAttribute("aria-pressed", String(l === "de"));
+    document.documentElement.lang = l;
+  };
+  document.getElementById("l-en").addEventListener("click", () => show("en"));
+  document.getElementById("l-de").addEventListener("click", () => show("de"));
+  const want = location.hash === "#de" || ((navigator.language || "").startsWith("de") && location.hash !== "#en") ? "de" : "en";
+  show(want);
+</script>
+
+</body></html>
