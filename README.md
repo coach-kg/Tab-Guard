@@ -129,4 +129,4 @@ Changes are listed in the [changelog](CHANGELOG.md). Ideas and bug reports are w
 
 ## License
 
-[MIT](LICENSE). The bundled Atkinson Hyperlegible font is under the [SIL Open Font License](extension/assets/fonts/OFL.txt).
+[MIT](LICENSE), provided as is, without warranty. You use it at your own risk. Helplines, health and government sites are never blocked. The bundled Atkinson Hyperlegible font is under the [SIL Open Font License](extension/assets/fonts/OFL.txt).

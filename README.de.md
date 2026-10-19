@@ -76,4 +76,4 @@ Englisch, Deutsch, Französisch, Spanisch, Rumänisch. Die Sprache folgt deinem 
 
 ## Entwicklung, Lizenz
 
-Aufbau, Build und Lint stehen im [englischen README](README.md#development). Lizenz: [MIT](LICENSE).
+Aufbau, Build und Lint stehen im [englischen README](README.md#development). Lizenz: [MIT](LICENSE), ohne Gewähr. Du nutzt Tab Guard auf eigenes Risiko. Hilfe-, Gesundheits- und Behördenseiten werden nie gesperrt.
