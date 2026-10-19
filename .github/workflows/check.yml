@@ -1,0 +1,24 @@
+name: Build and lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build
+        run: scripts/build.sh
+      - name: Lint (addons-linter)
+        run: npx --yes addons-linter@latest dist/tab-guard_v*-firefox.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packages
+          path: dist/*.zip

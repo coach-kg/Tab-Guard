@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Tab Guard</title>
+<link rel="stylesheet" href="../assets/fonts.css">
+<style>
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    font: 16px/1.6 "Atkinson", system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: radial-gradient(1200px 600px at 50% -10%, #1a2233, #0b0e15); color: #e8ebf2; }
+  .card { text-align: center; width: min(520px, calc(100vw - 32px)); padding: 32px 0; }
+  .glyph { font-size: 40px; margin-bottom: 10px; }
+  h1 { font-size: 24px; margin: 0 0 26px; letter-spacing: -.01em; }
+  .bar { height: 14px; border-radius: 99px; background: #1b2131; overflow: hidden; border: 1px solid #2a3042; }
+  .fill { height: 100%; width: 0%; border-radius: 99px;
+    background: linear-gradient(90deg, #6f9dff, #8b5cf6); transition: width .25s linear; }
+  .meta { display: flex; justify-content: space-between; margin-top: 8px; font: 12.5px var(--mono); color: #6a7284; }
+  .flavor { min-height: 3.4em; margin: 26px auto 0; max-width: 440px; color: #9aa3b6; font-style: italic; transition: opacity .5s; }
+  .row { margin-top: 26px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  button { font: 600 15px "Atkinson", system-ui, sans-serif; padding: 11px 22px; border-radius: 999px; cursor: pointer;
+    border: 1px solid #2a3042; background: transparent; color: #9aa3b6; }
+  button.go { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+  button:disabled { opacity: .4; cursor: default; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="glyph">⏳</div>
+    <h1 id="title"></h1>
+    <div class="bar"><div class="fill" id="fill"></div></div>
+    <div class="meta"><span id="left"></span><span id="pct"></span></div>
+    <p class="flavor" id="flavor"></p>
+    <div class="row">
+      <button class="go" id="go" style="display:none"></button>
+      <button id="cancel"></button>
+    </div>
+  </div>
+  <script src="exit.js" type="module"></script>
+</body>
+</html>
