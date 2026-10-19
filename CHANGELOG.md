@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.32.0
+- **Experimental, optional: Touch Grass link.** Hidden under Settings → Experimental. Lets the Touch Grass Mac app see that Tab Guard is running, so it can require Tab Guard in every browser. Asks for the optional `nativeMessaging` permission only when switched on; nothing is sent over the network.
+- The manifest carries a `key` so a copy loaded with “Load unpacked” always has the same id. The store packages leave it out.
+
 ## 1.31.1
 - Safer page building: no `innerHTML` any more. Text that comes from a web page is always inserted as plain text.
 - The extension's own modules (translations, the pause overlay) load through one function.

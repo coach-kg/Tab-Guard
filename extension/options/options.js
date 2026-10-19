@@ -461,6 +461,36 @@ function buildNav() {
 
 $("language")?.addEventListener("change", () => { LANG = $("language").value || "auto"; apply(document, LANG); relabelPreviews(LANG); buildNav(); });
 
+// ---- OPTIONAL, EXPERIMENTAL: Touch Grass link (see src/touchGrass.js) ----
+// Switching it on asks the browser for the optional nativeMessaging
+// permission; switching it off gives the permission back. It is not part of
+// the saved settings, so it is not behind Save.
+const TG_STATUS_KEY = "tabguardTouchGrass";
+async function tgRefresh() {
+  const sw = $("tgLink");
+  if (!sw) return;
+  let granted = false;
+  try { granted = await chrome.permissions.contains({ permissions: ["nativeMessaging"] }); } catch (_) {}
+  sw.checked = granted;
+  $("tgLinkS").textContent = t(LANG, granted ? "o_on" : "o_off");
+  let st = null;
+  try { st = (await chrome.storage.session.get(TG_STATUS_KEY))[TG_STATUS_KEY]; } catch (_) {}
+  const key = !granted ? "tg_st_off" : st?.state === "connected" ? "tg_st_ok" : "tg_st_missing";
+  $("tgLinkStatus").textContent = t(LANG, key);
+  if (granted) $("expBox").open = true;
+}
+$("tgLink")?.addEventListener("change", (e) => {
+  // The request has to happen inside the click, with nothing awaited before it.
+  const ask = e.target.checked
+    ? chrome.permissions.request({ permissions: ["nativeMessaging"] })
+    : chrome.permissions.remove({ permissions: ["nativeMessaging"] });
+  Promise.resolve(ask).catch(() => {}).finally(tgRefresh);
+});
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "session" && changes[TG_STATUS_KEY]) tgRefresh();
+});
+$("language")?.addEventListener("change", tgRefresh);
+
 async function boot() {
   await load();
   const cfg = (await chrome.storage.local.get(KEY))[KEY] || {};
@@ -471,6 +501,7 @@ async function boot() {
   const lock = await applyDailyReset();
   renderLock(lock);
   buildNav();
+  tgRefresh();
   if (lock.enabled) openGate("change"); // gate on open until the code is typed
 }
 boot();

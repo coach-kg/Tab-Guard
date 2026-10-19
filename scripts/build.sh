@@ -21,6 +21,17 @@ mkdir -p "$TMP/chrome" "$DIST"
 (cd "$SRC" && tar cf - --exclude='.DS_Store' .) | (cd "$TMP/chrome" && tar xf -)
 cp -R "$TMP/chrome" "$TMP/firefox"
 
+# The "key" only pins the extension id for "Load unpacked", so the Touch Grass
+# app can recognise a development copy. The stores assign their own id.
+for f in "$TMP/chrome/manifest.json" "$TMP/firefox/manifest.json"; do
+  python3 - "$f" <<'PY'
+import json, sys
+m = json.load(open(sys.argv[1]))
+m.pop("key", None)
+json.dump(m, open(sys.argv[1], "w"), indent=2, ensure_ascii=False)
+PY
+done
+
 python3 - "$TMP/firefox/manifest.json" "$GECKO_ID" <<'PY'
 import json, sys
 path, gecko_id = sys.argv[1], sys.argv[2]

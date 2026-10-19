@@ -49,6 +49,14 @@ Du bestimmst, was vertraut, beobachtet oder gesperrt ist. Arbeit, Fachsuche und 
 
 Kein Konto, kein Server, keine Statistik. Einstellungen, Listen und Zähler bleiben im lokalen Speicher deines Browsers. Die Erweiterung stellt keine eigenen Netzwerkanfragen. Details: [Datenschutzerklärung](tab-guard-PRIVACY.md#deutsch).
 
+## Touch Grass (optional, experimentell)
+
+Tab Guard steht für sich allein. Wer auch [Touch Grass](https://github.com/coach-kg/touchgrass-mac) nutzt, den Blocker, der erst nach einem Gang nach draußen entsperrt, findet einen versteckten Schalter unter **Einstellungen → Experimentell → Mit Touch Grass verbinden**. Damit kann die Touch-Grass-App auf dem Mac Tab Guard in jedem Browser verlangen und Browser ohne Tab Guard beenden.
+
+Beim Einschalten fragt der Browser nach der optionalen Berechtigung `nativeMessaging`. Tab Guard meldet der Mac-App dann alle paar Sekunden, dass es läuft, wie viele Fenster es sieht und ob es in privaten Fenstern laufen darf. Sonst nichts, und nichts verlässt den Computer. Ohne den Schalter läuft dieser Code nicht. Code: [`extension/src/touchGrass.js`](extension/src/touchGrass.js).
+
+Touch Grass: [für Mac](https://github.com/coach-kg/touchgrass-mac) · [für Android](https://github.com/coach-kg/TouchGrassBlocker)
+
 ## Installieren
 
 Die Einträge im Chrome Web Store und bei Firefox Add-ons sind unterwegs. Bis dahin, oder für den neuesten Stand:
