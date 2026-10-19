@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Redirecting</title>
+<style>
+  body { margin: 0; height: 100vh; display: flex; align-items: center; justify-content: center;
+    font: 16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;
+    background: radial-gradient(1200px 600px at 50% -10%, #14203a, #0b0e15); color: #e8ebf2; }
+  .c { text-align: center; }
+  .ring { width: 84px; height: 84px; margin: 0 auto 20px; }
+  svg { transform: rotate(-90deg); }
+  .track { stroke: #232838; } .prog { stroke: #6f9dff; stroke-linecap: round; }
+  h1 { font-size: 18px; margin: 0 0 6px; font-weight: 650; }
+  .arrow { font-family: ui-monospace, Menlo, monospace; font-size: 13px; color: #9aa3b6; }
+  .arrow b { color: #c4b5fd; }
+</style>
+</head>
+<body>
+  <div class="c">
+    <div class="ring">
+      <svg width="84" height="84" viewBox="0 0 84 84">
+        <circle class="track" cx="42" cy="42" r="36" fill="none" stroke-width="6"/>
+        <circle class="prog" id="prog" cx="42" cy="42" r="36" fill="none" stroke-width="6"
+          stroke-dasharray="226.2" stroke-dashoffset="226.2"/>
+      </svg>
+    </div>
+    <h1 id="title">Redirecting</h1>
+    <div class="arrow" id="arrow"></div>
+  </div>
+  <script src="redirecting.js" type="module"></script>
+</body>
+</html>

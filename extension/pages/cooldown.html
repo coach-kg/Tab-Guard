@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Cooldown</title>
+<style>
+  body { margin: 0; height: 100vh; display: flex; align-items: center; justify-content: center;
+    font: 16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;
+    background: radial-gradient(1200px 600px at 50% -10%, #1a2233, #0b0e15); color: #e8ebf2; }
+  .card { text-align: center; max-width: 440px; padding: 40px 34px; }
+  .glyph { font-size: 44px; margin-bottom: 14px; }
+  h1 { font-size: 26px; margin: 0 0 8px; letter-spacing: -.01em; }
+  p { color: #9aa3b6; margin: 0 0 20px; }
+  .host { color: #c4b5fd; font-weight: 600; }
+  .timer { font-size: 40px; font-weight: 700; font-variant-numeric: tabular-nums; margin: 18px 0 6px; }
+  .small { font-size: 12.5px; color: #5b6478; }
+  a { color: #6f9dff; text-decoration: none; }
+  .go{display:inline-block;margin:6px 0 18px;padding:12px 22px;border-radius:999px;background:#3b82f6;color:#fff;
+    font-weight:600;text-decoration:none;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .go:hover{background:#2f6fde}
+  .timer.free{cursor:pointer}
+  .eml{display:inline-block;margin-top:14px;font:inherit;font-size:12.5px;color:#6a7284;text-decoration:underline;cursor:pointer;background:none;border:0;padding:0}
+  .emp{margin-top:14px;padding:16px;border:1px solid #2a3042;border-radius:12px;text-align:left;font-size:14px;color:#cdd4e4}
+  .emp p{margin:6px 0 12px;font-size:13.5px}
+  .emp button{width:100%;font:inherit;font-weight:650;padding:11px 18px;border:0;border-radius:11px;cursor:pointer;margin-top:6px}
+  .emh{position:relative;overflow:hidden;background:#3b82f6;color:#fff}.emh i{position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(255,255,255,.22)}.emh span{position:relative}
+  .emc{background:#1b2130;color:#cdd4e4}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="glyph">🌊</div>
+    <h1>Cooldown</h1>
+    <p><span class="host" id="host">this site</span><span id="lead"></span></p>
+    <div class="timer" id="timer">—</div>
+    <a class="go" id="go" href="#" style="display:none"></a>
+    <p class="small" id="reason"></p>
+    <p class="small" data-t="cd_small">Do the thing you actually opened the browser for. This tab will let you leave whenever — the site just won't load yet.</p>
+    <div id="em"></div>
+  </div>
+  <script src="cooldown.js" type="module"></script>
+</body>
+</html>

@@ -1,0 +1,406 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tab Guard</title>
+<link rel="stylesheet" href="../assets/fonts.css">
+<style>
+  body { max-width: 940px; margin: 0 auto; padding: 40px 22px 80px; font-size: 15.5px; line-height: 1.5; }
+  header { margin-bottom: 20px; }
+
+  /* two-column layout: sticky nav + content */
+  .tg-layout { display: flex; gap: 40px; align-items: flex-start; }
+  .tg-nav { position: sticky; top: 28px; flex: 0 0 196px; max-height: calc(100vh - 56px); overflow-y: auto;
+    padding-right: 6px; font-size: 13px; }
+  .tg-nav::-webkit-scrollbar { width: 6px; } .tg-nav::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+  .tg-nav .ng { font-family: var(--mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--faint); margin: 18px 0 6px; } .tg-nav .ng:first-child { margin-top: 0; }
+  .tg-nav a { display: block; padding: 5px 10px; border-radius: 8px; color: var(--muted); text-decoration: none;
+    border-left: 2px solid transparent; transition: .15s; }
+  .tg-nav a:hover { color: var(--ink); background: var(--panel); }
+  .tg-nav a.active { color: var(--accent); border-left-color: var(--accent); background: var(--panel); }
+  .tg-main { flex: 1 1 auto; min-width: 0; }
+  .tg-main section:first-child { border-top: 0; padding-top: 0; }
+  .tg-main section { scroll-margin-top: 20px; }
+  .grp { display: none; } /* group labels live in the nav now */
+  /* phones: one fixed bar on top with a "jump to" menu and Save; no side nav, no floating button */
+  .mbar { display: none; }
+  @media (max-width: 720px) {
+    body { padding: 0 max(16px, env(safe-area-inset-right, 0px)) 60px max(16px, env(safe-area-inset-left, 0px)); }
+    header { padding-top: 20px; }
+    h1 { font-size: 24px; }
+    .tg-layout { display: block; }
+    .tg-nav { display: none; }
+    body .save { display: none; }
+    .mbar { display: flex; gap: 10px; align-items: center; position: sticky; top: 0; z-index: 30;
+      margin: 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px))) 6px; padding: 10px max(16px, env(safe-area-inset-left, 0px));
+      padding-top: calc(10px + env(safe-area-inset-top, 0px));
+      background: var(--bg); border-bottom: 1px solid var(--line); }
+    .mbar select { flex: 1 1 auto; min-width: 0; font: inherit; font-size: 15px; padding: 9px 10px; border-radius: 10px;
+      background: var(--panel); color: var(--ink); border: 1px solid var(--line-2); }
+    .mbar button { flex: 0 0 auto; font: inherit; font-weight: 700; font-size: 15px; padding: 9px 16px; border: 0; border-radius: 10px;
+      background: var(--accent); color: #06122e; cursor: pointer; }
+    .mbar .ok { flex: 0 0 auto; font-family: var(--mono); font-size: 13px; color: var(--ok); opacity: 0; transition: opacity .2s; }
+    .mbar .ok.show { opacity: 1; }
+    .tg-main section { scroll-margin-top: 70px; }
+    .field { gap: 12px; }
+    .field label { font-size: 14.5px; }
+  }
+  h1 { font-size: 30px; font-weight: 700; letter-spacing: -.025em; margin: 0 0 6px; }
+  header p { color: var(--muted); margin: 0; font-size: 14px; max-width: 46ch; }
+
+  section { border-top: 1px solid var(--line); padding: 22px 0 6px; }
+  h2 { font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--faint); margin: 0 0 14px; display: flex; align-items: center; gap: 9px; }
+  h2 .ic { font-size: 14px; letter-spacing: 0; }
+  .note { color: var(--faint); font-size: 12.5px; margin: -8px 0 14px; }
+  .dep-off { opacity: .38; pointer-events: none; transition: opacity .2s; }
+
+  .field { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 8px 0; }
+  .field label { color: var(--muted); font-size: 14px; }
+  .field .in { flex: 0 0 auto; min-width: 118px; display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+  .field .in .state { font-family: var(--mono); font-size: 11px; color: var(--faint); min-width: 24px; text-align: right; }
+  input[type=number], input[type=time] {
+    width: 92px; text-align: right; font-family: var(--mono); font-size: 13.5px;
+    padding: 7px 10px; background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 9px; color: var(--ink); }
+  input[type=time] { width: 118px; text-align: left; }
+  input[type=text] { background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 9px;
+    color: var(--ink); padding: 8px 11px; font-size: 14px; }
+  input[type=text]::placeholder { color: var(--faint); }
+  textarea { width: 100%; min-height: 104px; resize: vertical; margin-top: 4px;
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.7;
+    padding: 12px 13px; background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 11px; color: var(--ink); }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); }
+
+  .sw { position: relative; width: 46px; height: 26px; flex: 0 0 auto; }
+  .sw input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; z-index: 1; }
+  .sw span { position: absolute; inset: 0; background: #1a1f2c; border: 1.5px solid #3a4256; border-radius: 99px; transition: .18s; }
+  .sw span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; background: #8b93a7; border-radius: 50%; transition: .18s; }
+  .sw input:checked + span { background: rgba(111,157,255,.28); border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .sw input:checked + span::after { transform: translateX(20px); background: var(--accent); }
+
+  .mini-btn { font-family: inherit; font-size: 13px; font-weight: 700; padding: 8px 14px; border: 1px solid var(--line-2);
+    border-radius: 9px; cursor: pointer; background: var(--panel); color: var(--ink); }
+  .mini-btn:hover { border-color: var(--accent); }
+  .exp { font: 600 10px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--warn);
+    border: 1px solid currentColor; border-radius: 999px; padding: 2px 6px; margin-left: 6px; vertical-align: 1px; }
+  .ess summary { cursor: pointer; color: var(--muted); font-size: 14px; }
+  .bi-box { margin: 6px 0 4px; padding: 12px; border: 1px dashed var(--line-2); border-radius: 10px; }
+  .bi-box input { width: 100%; margin: 8px 0; }
+  .bi-row { display: flex; gap: 8px; align-items: center; }
+  .pg-code { font-size: 14px; letter-spacing: .06em; padding: 7px 10px; user-select: none; -webkit-user-select: none;
+    background: var(--panel-2); border: 1px dashed var(--accent); border-radius: 8px; color: var(--accent); }
+  .mini-btn.danger { color: var(--bad); border-color: #3a1420; }
+  select { padding: 7px 10px; background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 9px; color: var(--ink); font: inherit; }
+
+  #gate { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
+    background: rgba(8,10,15,.86); backdrop-filter: blur(10px); }
+  .gate-card { width: min(90vw, 380px); text-align: center; padding: 30px 28px; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 30px 80px rgba(0,0,0,.55); }
+  .gate-ic { font-size: 34px; margin-bottom: 10px; }
+  .gate-card h3 { margin: 0 0 6px; font-size: 19px; }
+  .gate-card p { color: var(--muted); font-size: 13px; margin: 0 0 16px; }
+  .gate-card input { width: 100%; text-align: center; letter-spacing: .12em; font-family: var(--mono); font-size: 16px;
+    padding: 11px; margin-bottom: 10px; background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 10px; color: var(--ink); }
+  .gate-card button { width: 100%; font-family: inherit; font-weight: 700; font-size: 15px; padding: 11px; border: 0;
+    border-radius: 11px; cursor: pointer; background: var(--accent); color: #06122e; }
+  .gate-err { color: var(--bad); font-size: 12.5px; min-height: 16px; margin-bottom: 8px; }
+  .gate-hint { color: var(--faint); font-family: var(--mono); font-size: 11.5px; margin-top: 10px; }
+  .reveal-code { font-size: 22px; letter-spacing: .16em; padding: 14px; margin-bottom: 16px; user-select: none;
+    background: var(--panel-2); border: 1px dashed var(--accent); border-radius: 12px; color: var(--accent); }
+
+  .save { position: sticky; bottom: 20px; margin-top: 30px; display: flex; align-items: center; gap: 14px; }
+  .save button { font-family: inherit; font-weight: 700; font-size: 15px; padding: 12px 24px; border: 0;
+    border-radius: 12px; cursor: pointer; background: var(--accent); color: #06122e; }
+  .saved { font-family: var(--mono); font-size: 13px; color: var(--ok); opacity: 0; transition: opacity .2s; }
+  .saved.show { opacity: 1; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Tab Guard</h1>
+    <p data-i18n="o_intro">Trusted sites are left alone. Everything else is watched.</p>
+  </header>
+
+  <div class="mbar" id="mbar">
+    <select id="jump"></select>
+    <span class="ok" id="savedM">✓</span>
+    <button type="button" id="saveM" data-i18n="o_b_save">Save</button>
+  </div>
+  <div class="tg-layout">
+  <aside id="nav" class="tg-nav"></aside>
+  <main class="tg-main">
+<section id="s_o_h_language">
+    <h2><span class="ic">🌍</span> <span data-i18n="o_h_language">language</span></h2>
+    <p class="note" data-i18n="o_n_language">Applies to the popup, interventions and block pages.</p>
+    <div class="field"><label data-i18n="o_l_language">Language</label><span class="in"><select id="language">
+      <option value="auto" data-i18n="o_optAuto">Auto (browser)</option>
+      <option value="en">English</option>
+      <option value="de">Deutsch</option>
+      <option value="fr">Français</option>
+      <option value="es">Español</option>
+      <option value="ro">Română</option>
+    </select></span></div>
+  </section>
+
+  <section id="s_o_h_trusted">
+    <h2><span class="ic">✅</span> <span data-i18n="o_h_trusted">trusted sites</span></h2>
+    <p class="note" data-i18n="o_n_trusted">One host per line.</p>
+    <textarea id="allowlist" spellcheck="false"></textarea>
+  </section>
+
+  <section id="s_o_h_academic">
+    <h2><span class="ic">🎓</span> <span data-i18n="o_h_academic">academic search</span></h2>
+    <p class="note" data-i18n="o_n_academic">Treated as trusted research.</p>
+    <textarea id="academic" spellcheck="false"></textarea>
+    <div class="field"><label data-i18n="o_l_proxies">University library proxies count as academic search</label><span class="in"><span class="state" id="proxyOnS">on</span><label class="sw"><input type="checkbox" id="proxyOn" checked><span></span></label></span></div>
+    <p class="note" data-i18n="o_n_proxies">Any address with ezproxy. or libproxy. in it.</p>
+  </section>
+
+  <div class="grp" data-i18n="o_grp_media" style="margin:30px 0 -4px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--faint);text-transform:uppercase"></div>
+
+  <section id="s_o_h_blocklist">
+    <h2><span class="ic">⛔</span> <span data-i18n="o_h_blocklist">blocklist</span></h2>
+    <p class="note" data-i18n="o_n_blocklist">Hard-blocked hosts.</p>
+    <textarea id="blocklist" spellcheck="false"></textarea>
+    <p class="note" id="blockPending" style="display:none;color:var(--warn);margin:4px 0 0"></p>
+    <div class="field"><label data-i18n="o_l_autoBlock">Auto-add a domain when it gets locked</label><span class="in"><span class="state" id="autoBlockS">off</span><label class="sw"><input type="checkbox" id="autoBlock"><span></span></label></span></div>
+    <div class="field"><label data-i18n="o_l_ctImport">Import a list (Cold Turkey, hosts)</label><span class="in"><button type="button" id="ctPick" class="mini-btn" data-i18n="o_b_ctPick">choose file…</button><button type="button" id="ctRemove" class="mini-btn danger" data-i18n="o_b_ctRemove" style="display:none">remove</button></span></div>
+    <input type="file" id="ctFile" accept=".txt,.ctbbl,.csv,text/plain" style="display:none">
+    <p class="note mono" id="ctStats" style="margin:0 0 6px"></p>
+    <p class="note" id="ctPending" style="display:none;color:var(--warn);margin:0 0 6px"></p>
+    <p class="note" data-i18n="o_n_ctImport">Saved locally and not shown. Counts as a hard rule: it also applies during a pause. A new import replaces the old one.</p>
+  </section>
+
+  <section id="s_o_h_jug">
+    <h2><span class="ic">🔞</span> <span data-i18n="o_h_jug">content filter</span> <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--faint)">· <span data-i18n="o_h_jug_sub">adult</span></span></h2>
+    <p class="note" data-i18n="o_n_jug">Blocks known adult domains + RTA-labelled pages.</p>
+    <p class="note" id="adultPending" style="display:none;color:var(--warn);margin:0 0 4px"></p>
+    <div class="field"><label data-i18n="o_l_enabled">Enabled</label><span class="in"><span class="state" id="adultS">off</span><label class="sw"><input type="checkbox" id="adult"><span></span></label></span></div>
+    <div class="field" data-dep="adult"><label data-i18n="o_l_adultDetect">Recognise adult sites by what they say about themselves</label><span class="in"><span class="state" id="adultDetectS">on</span><label class="sw"><input type="checkbox" id="adultDetect" checked><span></span></label></span></div>
+    <p class="note" data-i18n="o_n_adultLearned" data-dep="adult">Recognised sites land here and are closed before they load next time.</p>
+    <textarea id="adultLearned" spellcheck="false" data-dep="adult"></textarea>
+    <div class="field" data-dep="adult"><label data-i18n="o_l_adultSearchPause">Breathing pause when a search contains explicit terms</label><span class="in"><span class="state" id="adultSearchS">on</span><label class="sw"><input type="checkbox" id="adultSearch" checked><span></span></label></span></div>
+    <div class="field" data-dep="adult"><label data-i18n="o_l_adultGreyLinks">Grey out links to adult sites</label><span class="in"><span class="state" id="adultGreyS">on</span><label class="sw"><input type="checkbox" id="adultGrey" checked><span></span></label></span></div>
+    <div class="field" data-dep="adult"><label data-i18n="o_l_adultSafe">Force SafeSearch; block searches that can’t be filtered</label><span class="in"><span class="state" id="adultSafeS">on</span><label class="sw"><input type="checkbox" id="adultSafe" checked><span></span></label></span></div>
+    <p class="note" data-i18n="o_n_adultSafe" data-dep="adult"></p>
+    <p class="note" data-i18n="o_n_adultTerms" data-dep="adult" style="margin-top:6px"></p>
+    <textarea id="adultTerms" spellcheck="false" data-dep="adult" style="min-height:70px"></textarea>
+    <div class="field" data-dep="adult"><label data-i18n="o_l_builtin">Built-in term list</label><span class="in"><button type="button" id="biOpen" class="mini-btn" data-i18n="o_b_builtin">show…</button></span></div>
+    <div id="biGate" style="display:none" class="bi-box">
+      <p class="note" style="margin:0 0 8px" id="biPrompt"></p>
+      <div class="pg-code mono" id="biPhrase"></div>
+      <input type="text" id="biInput" autocomplete="off" spellcheck="false">
+      <div class="bi-row"><button type="button" id="biShow" class="mini-btn" data-i18n="o_b_biShow">show</button><button type="button" id="biCancel" class="mini-btn" data-i18n="pg_cancel">cancel</button><span class="note" id="biErr" style="margin:0"></span></div>
+    </div>
+    <div id="biList" style="display:none" class="bi-box"><p class="mono" id="biTerms" style="margin:0 0 6px;word-spacing:.4em"></p><p class="note" id="biTimer" style="margin:0"></p></div>
+  </section>
+
+  <section id="s_o_h_redirects">
+    <h2><span class="ic">↪️</span> <span data-i18n="o_h_redirects">redirects</span></h2>
+    <p class="note" data-i18n="o_n_redirects">Send a watched site to a calmer one. from ⇒ to</p>
+    <textarea id="redirects" spellcheck="false" placeholder="reddit.com > safereddit.com"></textarea>
+  </section>
+
+  <section id="s_o_h_intention">
+    <h2><span class="ic">🎯</span> <span data-i18n="o_h_intention">intention prompt &amp; better sources</span></h2>
+    <p class="note" data-i18n="o_n_intention">The pause that asks what you're here for.</p>
+    <div class="field"><label data-i18n="o_l_intentShow">Show the intention prompt</label><span class="in"><span class="state" id="intentOnS">on</span><label class="sw"><input type="checkbox" id="intentOn" checked><span></span></label></span></div>
+    <div class="field" data-dep="intentOn"><label data-i18n="o_l_question">Question</label><span class="in" style="min-width:280px"><input type="text" id="intentQ" data-i18n-ph="ov_question" placeholder="What are you here for?" style="width:280px;text-align:left;font-family:inherit"></span></div>
+    <div class="field"><label data-i18n="o_l_continueUnlock">'Continue anyway' unlocks after (sec)</label><span class="in"><input type="number" id="friction" min="0"></span></div>
+    <div class="field"><label data-i18n="o_l_offerSources">Offer better sources</label><span class="in"><span class="state" id="srcOnS">off</span><label class="sw"><input type="checkbox" id="srcOn"><span></span></label></span></div>
+    <div class="field" data-dep="srcOn"><label data-i18n="o_l_sourcesAfter">…only after (active min)</label><span class="in"><input type="number" id="srcAfter" min="0" step="1"></span></div>
+    <textarea id="betterSources" data-dep="srcOn" spellcheck="false" placeholder="ARTE Mediathek > https://www.arte.tv/de/"></textarea>
+  </section>
+
+  
+
+  <section id="s_o_h_fullblur">
+    <h2><span class="ic">🌁</span> <span data-i18n="o_h_fullblur">whole-page blur</span></h2>
+    <p class="note" data-i18n="o_n_fullblur">On these hosts the blur covers the whole page incl. text, and text can't be selected or copied. Others get media-only.</p>
+    <textarea id="fullBlur" spellcheck="false"></textarea>
+    <div class="field"><label data-i18n="o_l_fbAll">Apply whole-page blur to all watched sites</label><span class="in"><span class="state" id="fbAllS">off</span><label class="sw"><input type="checkbox" id="fbAll"><span></span></label></span></div>
+    <div class="field"><label data-i18n="o_l_fbLinks">Also disable links while blurred</label><span class="in"><span class="state" id="fbLinksS">off</span><label class="sw"><input type="checkbox" id="fbLinks"><span></span></label></span></div>
+  </section>
+
+  <div class="grp" data-i18n="o_grp_behaviour" style="margin:30px 0 -4px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--faint);text-transform:uppercase"></div>
+
+  <section id="s_o_h_breaker">
+    <h2><span class="ic">🗂️</span> <span data-i18n="o_h_breaker">tab circuit breaker</span></h2>
+    <p class="note" data-i18n="o_n_breaker"></p>
+    <div class="field"><label data-i18n="o_l_pauseAfterN">Pause after N tabs</label><span class="in"><input type="number" id="w1c" min="2"></span></div>
+    <div class="field"><label data-i18n="o_l_within">…within seconds</label><span class="in"><input type="number" id="w1s" min="10"></span></div>
+    <div class="field"><label data-i18n="o_l_lockAfterN">Lock after N tabs</label><span class="in"><input type="number" id="w2c" min="3"></span></div>
+    <div class="field"><label data-i18n="o_l_within">…within seconds</label><span class="in"><input type="number" id="w2s" min="30"></span></div>
+    <div class="field"><label data-i18n="o_l_lockDur">Lock duration (min)</label><span class="in"><input type="number" id="lock" min="1"></span></div>
+    <div class="field"><label data-i18n="o_l_cooldownIgnored">Cooldown after N ignored</label><span class="in"><input type="number" id="ignored" min="1"></span></div>
+  </section>
+
+  
+
+  <section id="s_o_h_scroll">
+    <h2><span class="ic">🌀</span> <span data-i18n="o_h_scroll">scroll intervention</span></h2>
+    <p class="note" data-i18n="o_n_scroll"></p>
+    <div class="field"><label data-i18n="o_l_intensity">Intensity trigger (0–100)</label><span class="in"><input type="number" id="intense" min="30" max="100"></span></div>
+    <div class="field"><label data-i18n="o_l_watchAfter">Watch after (active min)</label><span class="in"><input type="number" id="watchAfter" step="0.5" min="0"></span></div>
+    <div class="field"><label data-i18n="o_l_breathPause">Breathing pause (sec)</label><span class="in"><input type="number" id="breath" min="3"></span></div>
+  </section>
+
+  <section id="s_o_h_escalation">
+    <h2><span class="ic">🌫️</span> <span data-i18n="o_h_escalation">escalation ladder</span></h2>
+    <p class="note" data-i18n="o_n_escalation">Applies to all watched pages, images included.</p>
+    <div class="field"><label data-i18n="o_l_enabled">Enabled</label><span class="in"><span class="state" id="escOnS">off</span><label class="sw"><input type="checkbox" id="escOn"><span></span></label></span></div>
+    <div class="field" data-dep="escOn"><label data-i18n="o_l_decay">Pressure cools off over (min)</label><span class="in"><input type="number" id="decay" min="5"></span></div>
+    <div class="field" data-dep="escOn"><label data-i18n="o_l_greyAt">→ greyscale at</label><span class="in"><input type="number" id="sGrey" min="1" max="100"></span></div>
+    <div class="field" data-dep="escOn"><label data-i18n="o_l_blurAt">→ blur at</label><span class="in"><input type="number" id="sBlur" min="1" max="100"></span></div>
+    <div class="field" data-dep="escOn"><label data-i18n="o_l_blockAt">→ block at</label><span class="in"><input type="number" id="sBlock" min="1" max="100"></span></div>
+    <div class="field" data-dep="escOn"><label data-i18n="o_l_maxBlur">Max blur (px)</label><span class="in"><input type="number" id="maxBlur" min="2"></span></div>
+    <div class="field" data-dep="escOn"><label data-i18n="o_l_allowReveal">Allow the reveal button</label><span class="in"><span class="state" id="revealOnS">on</span><label class="sw"><input type="checkbox" id="revealOn" checked><span></span></label></span></div>
+    <div class="field" data-dep="escOn"><label data-i18n="o_l_revealDelay">Reveal delay min–max (sec)</label><span class="in"><input type="number" id="revMin" min="0" style="width:46px"> <input type="number" id="revMax" min="1" style="width:46px"></span></div>
+  </section>
+
+  <section id="s_o_h_dwellchurn">
+    <h2><span class="ic">⏯️</span> <span data-i18n="o_h_dwellchurn">media dwell &amp; search churn</span></h2>
+    <p class="note" data-i18n="o_n_dwellchurn"></p>
+    <div class="field"><label data-i18n="o_l_dwellEnabled">Media-dwell enabled</label><span class="in"><span class="state" id="dwellOnS">off</span><label class="sw"><input type="checkbox" id="dwellOn"><span></span></label></span></div>
+    <div class="field" data-dep="dwellOn"><label data-i18n="o_l_idleAfter">Counts as idle after (sec)</label><span class="in"><input type="number" id="dwellIdle" step="0.5" min="1"></span></div>
+    <div class="field"><label data-i18n="o_l_churnEnabled">Search-churn enabled</label><span class="in"><span class="state" id="churnOnS">off</span><label class="sw"><input type="checkbox" id="churnOn"><span></span></label></span></div>
+    <div class="field" data-dep="churnOn"><label data-i18n="o_l_nLoads">N page loads</label><span class="in"><input type="number" id="churnCount" min="2"></span></div>
+    <div class="field" data-dep="churnOn"><label data-i18n="o_l_within">…within seconds</label><span class="in"><input type="number" id="churnSec" min="10"></span></div>
+  </section>
+
+  <section id="s_o_h_previews">
+    <h2><span class="ic">🎞️</span> <span data-i18n="o_h_previews">video previews</span></h2>
+    <p class="note" data-i18n="o_n_previews">Stops the clips thumbnails play when you point at them.</p>
+    <div class="field"><label data-i18n="o_l_enabled">Enabled</label><span class="in"><span class="state" id="pvOnS">on</span><label class="sw"><input type="checkbox" id="pvOn" checked><span></span></label></span></div>
+    <div class="field" data-dep="pvOn"><label data-i18n="o_l_pvGifs">Freeze animated GIFs and looping clips</label><span class="in"><span class="state" id="pvGifsS">on</span><label class="sw"><input type="checkbox" id="pvGifs" checked><span></span></label></span></div>
+    <div class="field" data-dep="pvOn"><label data-i18n="o_l_pvSwap">Stop thumbnails swapping to an animation on hover</label><span class="in"><span class="state" id="pvSwapS">on</span><label class="sw"><input type="checkbox" id="pvSwap" checked><span></span></label></span></div>
+    <div class="field" data-dep="pvOn"><label data-i18n="o_l_pvEverywhere">Also on trusted sites</label><span class="in"><span class="state" id="pvAllS">off</span><label class="sw"><input type="checkbox" id="pvAll"><span></span></label></span></div>
+  </section>
+
+  <section id="s_o_h_shortform">
+    <h2><span class="ic">📱</span> <span data-i18n="o_h_shortform">short-form video filter</span></h2>
+    <p class="note" data-i18n="o_n_shortform">Hide vertical and/or very short videos.</p>
+    <p class="note" data-i18n="o_n_sf_actions"></p>
+    <div class="field"><label data-i18n="o_l_sfEnabled">Enabled</label><span class="in"><span class="state" id="sfOnS">off</span><label class="sw"><input type="checkbox" id="sfOn"><span></span></label></span></div>
+    <div class="field" data-dep="sfOn"><label data-i18n="o_l_sfAction">Action</label><span class="in"><select id="sfAction">
+      <option value="blur" data-i18n="sf_a_blur">blur</option>
+      <option value="greyscale" data-i18n="sf_a_greyscale">greyscale</option>
+      <option value="remove" data-i18n="sf_a_remove">remove</option>
+      <option value="collapse" data-i18n="sf_a_collapse">collapse</option>
+      <option value="pause" data-i18n="sf_a_pause">pause</option>
+    </select></span></div>
+    <div class="field" data-dep="sfOn"><label data-i18n="o_l_sfMin">Hide videos shorter than (sec, 0=off)</label><span class="in"><input type="number" id="sfMin" min="0"></span></div>
+    <div class="field" data-dep="sfOn"><label data-i18n="o_l_sfPortrait">Target vertical videos</label><span class="in"><span class="state" id="sfPortraitS">on</span><label class="sw"><input type="checkbox" id="sfPortrait" checked><span></span></label></span></div>
+    <div class="field" data-dep="sfOn"><label data-i18n="o_l_sfBlockUrls">Block /shorts/ and /reels/ pages</label><span class="in"><span class="state" id="sfBlockUrlsS">on</span><label class="sw"><input type="checkbox" id="sfBlockUrls" checked><span></span></label></span></div>
+    <div class="field" data-dep="sfOn"><label data-i18n="o_l_sfPrePlay">Catch videos before they play (by their format)</label><span class="in"><span class="state" id="sfPrePlayS">on</span><label class="sw"><input type="checkbox" id="sfPrePlay" checked><span></span></label></span></div>
+    <div class="field" data-dep="sfOn"><label><span data-i18n="o_l_sfSwipe">Recognise swipe feeds</span> <span class="exp" data-i18n="o_exp">experimental</span></label><span class="in"><span class="state" id="sfSwipeS">off</span><label class="sw"><input type="checkbox" id="sfSwipe"><span></span></label></span></div>
+    <p class="note" data-i18n="o_n_sfSwipe" data-dep="sfOn" style="margin-top:2px"></p>
+  </section>
+
+    <section id="s_o_h_pagination">
+    <h2><span class="ic">📄</span> <span data-i18n="o_h_pagination">feed pagination (good friction)</span></h2>
+    <p class="note" data-i18n="o_n_pagination">Cap infinite feeds to a page.</p>
+    <div class="field"><label data-i18n="o_l_pgEnabled">Enabled</label><span class="in"><span class="state" id="pgOnS">off</span><label class="sw"><input type="checkbox" id="pgOn"><span></span></label></span></div>
+    <div class="field" data-dep="pgOn"><label data-i18n="o_l_pgSize">Items per page</label><span class="in"><input type="number" id="pgSize" min="1"></span></div>
+    <div class="field" data-dep="pgOn"><label data-i18n="o_l_pgDelay">Button countdown (sec, 0=instant)</label><span class="in"><input type="number" id="pgDelay" min="0"></span></div>
+    <p class="note" data-i18n="o_n_pgHosts" data-dep="pgOn">Limit to these hosts (empty = all watched).</p>
+    <textarea id="pgHosts" spellcheck="false" data-dep="pgOn"></textarea>
+  </section>
+
+<section id="s_o_h_streaming">
+    <h2><span class="ic">🎬</span> <span data-i18n="o_h_streaming">streaming</span></h2>
+    <p class="note" data-i18n="o_n_streaming">Sites you watch on purpose — trusted, never greyscaled.</p>
+    <textarea id="streaming" spellcheck="false"></textarea>
+  </section>
+
+  <section id="s_o_h_latenight">
+    <h2><span class="ic">🌙</span> <span data-i18n="o_h_latenight">late-night hard mode</span></h2>
+    <p class="note" data-i18n="o_n_latenight"></p>
+    <div class="field"><label data-i18n="o_l_enabled">Enabled</label><span class="in"><span class="state" id="lnOnS">off</span><label class="sw"><input type="checkbox" id="lnOn"><span></span></label></span></div>
+    <div class="field" data-dep="lnOn"><label data-i18n="o_l_start">Start</label><span class="in"><input type="time" id="lnStart"></span></div>
+    <div class="field" data-dep="lnOn"><label data-i18n="o_l_end">End</label><span class="in"><input type="time" id="lnEnd"></span></div>
+  </section>
+
+
+
+  <div class="grp" data-i18n="o_grp_safety" style="margin:30px 0 -4px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--faint);text-transform:uppercase"></div>
+
+  <section id="s_o_h_pause">
+    <h2><span class="ic">⏸️</span> <span data-i18n="o_h_pause">pausing protection</span></h2>
+    <p class="note" data-i18n="o_n_pause">The pause button in the popup switches everything off for a while.</p>
+    <div class="field"><label data-i18n="o_l_autoResume">Pause auto-resumes after (min)</label><span class="in"><input type="number" id="autoResume" min="1"></span></div>
+    <p class="note" data-i18n="o_n_exits" style="margin-top:8px"></p>
+    <div class="field"><label data-i18n="o_l_exOn">Growing wait before pausing and resetting</label><span class="in"><span class="state" id="exOnS">on</span><label class="sw"><input type="checkbox" id="exOn" checked><span></span></label></span></div>
+    <div class="field" data-dep="exOn"><label data-i18n="o_l_exDayStart">Your day starts at</label><span class="in"><input type="time" id="exDayStart" style="min-width:132px"></span></div>
+    <div class="field" data-dep="exOn"><label data-i18n="o_l_exStart">First wait</label><span class="in"><select id="exStart"><option value="5">5 s</option><option value="10">10 s</option></select></span></div>
+    <div class="field" data-dep="exOn"><label data-i18n="o_l_exBudget">Daily budget (0 = no limit)</label><span class="in"><input type="number" id="exBudget" min="0" max="99"></span></div>
+    <div class="field" data-dep="exOn"><label data-i18n="o_l_exMax">Longest wait</label><span class="in"><select id="exMax"><option value="20">20 s</option><option value="60">1 min</option><option value="120">2 min</option><option value="300">5 min</option></select></span></div>
+    <div class="field" data-dep="exOn"><label data-i18n="o_l_exGrey">Not from a grey or blurred page</label><span class="in"><span class="state" id="exGreyS">on</span><label class="sw"><input type="checkbox" id="exGrey" checked><span></span></label></span></div>
+    <div class="field"><label data-i18n="o_l_exReset">“Reset pressure” does</label><span class="in"><select id="exReset"><option value="halve" data-i18n="o_ex_halve">halve it</option><option value="full" data-i18n="o_ex_full">clear it completely</option></select></span></div>
+    <p class="note" id="exPending" style="display:none;color:var(--warn);margin:4px 0 0"></p>
+  </section>
+
+  <section id="s_o_h_essential">
+    <h2><span class="ic">🛟</span> <span data-i18n="o_h_essential">never blocked</span></h2>
+    <p class="note" data-i18n="o_n_essential"></p>
+    <details class="ess"><summary data-i18n="o_l_essentialList">built-in list</summary><p class="mono note" id="essList" style="margin:8px 0 0;word-spacing:.3em"></p></details>
+    <p class="note" data-i18n="o_n_essentialExtra" style="margin-top:12px"></p>
+    <textarea id="essentialExtra" spellcheck="false" style="min-height:70px"></textarea>
+    <p class="note" id="essPending" style="display:none;color:var(--warn);margin:4px 0 0"></p>
+  </section>
+
+  <section id="s_o_h_lock">
+    <h2><span class="ic">🔒</span> <span data-i18n="o_h_lock">settings lock</span></h2>
+    <p class="note" data-i18n="o_n_lock">Protect these settings behind a code you type by hand.</p>
+    <div id="lockOff">
+      <div class="field"><label data-i18n="o_l_codeLen">Code length to type</label><span class="in"><input type="number" id="lockLen" min="4" max="40" value="12"></span></div>
+      <div class="field"><label data-i18n="o_l_allowedChanges">Allowed changes (unlocks)</label><span class="in"><input type="number" id="lockMax" min="1" value="10"></span></div>
+      <div class="field"><label data-i18n="o_l_resetDaily">Reset the counter daily</label><span class="in"><span class="state" id="lockResetS">on</span><label class="sw"><input type="checkbox" id="lockReset" checked><span></span></label></span></div>
+      <div class="field"><label></label><span class="in"><button type="button" id="lockEnable" class="mini-btn" data-i18n="o_b_lockSettings">Lock settings</button></span></div>
+    </div>
+    <div id="lockOn" style="display:none">
+      <div class="field"><label data-i18n="o_l_lockStatus">Lock status</label><span class="in mono" id="lockStatus" style="color:var(--ok)">active</span></div>
+      <div class="field"><label data-i18n="o_l_changesLeft">Changes left</label><span class="in mono" id="lockLeft">—</span></div>
+      <div class="field"><label data-i18n="o_l_counterResets">Counter resets</label><span class="in mono" id="lockResetInfo">daily</span></div>
+      <div class="field"><label></label><span class="in"><button type="button" id="lockRemove" class="mini-btn danger" data-i18n="o_b_removeLock">Remove lock…</button></span></div>
+    </div>
+  </section>
+
+  <section id="s_o_h_backup">
+    <h2><span class="ic">💾</span> <span data-i18n="o_h_backup">backup</span></h2>
+    <p class="note" data-i18n="o_n_backup">Export all settings and lists to a file, or import one.</p>
+    <div class="field"><label data-i18n="o_l_settingsFile">Your settings as a file</label><span class="in"><button type="button" id="exportBtn" class="mini-btn" data-i18n="o_b_export">Export JSON</button> <button type="button" id="importBtn" class="mini-btn" data-i18n="o_b_import">Import…</button></span></div>
+    <input type="file" id="importFile" accept="application/json,.json" style="display:none">
+    <div class="note" id="importMsg"></div>
+  </section>
+
+  <div class="save"><button id="save" data-i18n="o_b_save">Save</button><span class="saved" id="saved" data-i18n="o_saved">saved ✓</span></div>
+
+  <footer style="margin-top:40px;text-align:center;color:var(--faint);font-size:12.5px;line-height:1.8">
+    <div>Tab&nbsp;Guard <span class="mono" id="verLabel"></span></div>
+    <div data-i18n="o_footerMade">Made with ♥ in Neu-Ulm</div>
+  </footer>
+  </main>
+</div>
+
+  <div id="gate" style="display:none">
+    <div class="gate-card">
+      <div class="gate-ic">🔒</div>
+      <h3 id="gateTitle" data-i18n="o_g_title">Type to unlock settings</h3>
+      <p id="gateMsg" data-i18n="o_g_msg">Retype the code below exactly. Paste is disabled.</p>
+      <div class="reveal-code mono" id="gateChallenge"></div>
+      <input type="text" id="gatePass" data-i18n-ph="o_g_ph" placeholder="type the code" />
+      <div class="gate-err" id="gateErr"></div>
+      <button id="gateSubmit" data-i18n="o_g_unlock">Unlock</button>
+      <div class="gate-hint" id="gateHint"></div>
+    </div>
+  </div>
+  <div id="reveal" style="display:none"></div>
+
+  <script src="../assets/lock.js"></script>
+  <script src="../src/adultSignals.js"></script>
+  <script src="options.js" type="module"></script>
+</body>
+</html>
