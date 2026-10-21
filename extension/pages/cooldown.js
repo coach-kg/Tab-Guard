@@ -36,15 +36,15 @@ async function boot() {
   LANG = cfg.language || "auto";
   document.getElementById("host").textContent = host || t(LANG, "cd_thisSite");
 
-  const hard = reason === "blocked" || reason === "adult" || reason === "import" || reason === "unfiltered";
-  const adultish = reason === "adult" || reason === "unfiltered";
+  const hard = reason === "blocked" || reason === "adult" || reason === "import" || reason === "unfiltered" || reason === "proxy";
+  const adultish = reason === "adult" || reason === "unfiltered" || reason === "proxy";
   if (hard) {
-    document.querySelector(".glyph").textContent = adultish ? "🔞" : "🚫";
-    document.querySelector("h1").textContent = adultish ? t(LANG, "cd_adultTitle") : t(LANG, "cd_blocked");
+    document.querySelector(".glyph").textContent = reason === "proxy" ? "🧭" : adultish ? "🔞" : "🚫";
+    document.querySelector("h1").textContent = reason === "proxy" ? t(LANG, "cd_proxyTitle") : adultish ? t(LANG, "cd_adultTitle") : t(LANG, "cd_blocked");
     document.getElementById("timer").style.display = "none";
     document.getElementById("lead").textContent = "";
     document.getElementById("host").style.display = "none";
-    document.getElementById("reason").textContent = t(LANG, { adult: "cd_reasonAdult", import: "cd_reasonImport", unfiltered: "cd_reasonUnfiltered" }[reason] || "cd_reasonBlock");
+    document.getElementById("reason").textContent = t(LANG, { adult: "cd_reasonAdult", import: "cd_reasonImport", unfiltered: "cd_reasonUnfiltered", proxy: "cd_reasonProxy" }[reason] || "cd_reasonBlock");
     const p = document.createElement("p");
     p.className = "small";
     p.textContent = t(LANG, "cd_removeHint");
@@ -109,7 +109,7 @@ boot();
 const send = (m) => new Promise(r => chrome.runtime.sendMessage(m, x => { void chrome.runtime.lastError; r(x || {}); }));
 async function emergencyOffer() {
   const box = document.getElementById("em");
-  if (!box || !host || !target || reason === "adult" || reason === "unfiltered") return;
+  if (!box || !host || !target || reason === "adult" || reason === "unfiltered" || reason === "proxy") return;
   const st = await send({ type: "EMERGENCY_STATUS", host });
   if (!st.available) { box.replaceChildren(); return; }
   setHTML(box, `<button class="eml" id="emLink"></button>`);

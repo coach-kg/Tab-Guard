@@ -29,7 +29,7 @@ Für Köpfe, die ständig den nächsten Reiz suchen.
 - **Short-Form-Filter:** blendet Hochkant-Kurzvideos aus oder verwischt sie, auch in eingebetteten Playern, ebenso `/shorts/`- und `/reels/`-Seiten. Querformat-Videos bleiben unberührt.
 - **Ruhige Ansicht:** Bilder im Popup auf grau oder unscharf stellen, mit Ausnahmen pro Seite. Kurz mit der Maus darauf zeigen, um eins zu sehen.
 - **Vorschau-Videos:** stoppt Hover-Vorschauen und hält animierte GIFs beim ersten Bild an.
-- **Jugendschutz:** erkennt Adult-Seiten an ihrem Inhalt, sperrt sie und erzwingt SafeSearch bei Google, Bing, DuckDuckGo, Brave, Yahoo und SearXNG. Auf YouTube blendet er Anleitungen zum Umgehen von Schul- und Jugendschutzfiltern aus.
+- **Jugendschutz:** erkennt Adult-Seiten an ihrem Inhalt, sperrt sie und erzwingt SafeSearch bei Google, Bing, DuckDuckGo, Brave, Yahoo und SearXNG. Proxy- und Unblocked-Games-Seiten erkennt er an ihrem Aufbau und sperrt sie; auf YouTube blendet er Anleitungen zum Umgehen von Filtern aus.
 - **Blockliste, Import, Weiterleitungen:** eigene Blockliste, importierte Listen (z. B. aus Cold Turkey) und Weiterleitungen wie reddit.com → eine ruhigere Oberfläche.
 - **Notausgänge mit kleinem Preis:** Pausieren und Zurücksetzen warten jedes Mal etwas länger, mit einem Tagesbudget, das du festlegst.
 - **Nie gesperrt:** Hilfe-, Gesundheits- und Behördenseiten werden nie gesperrt oder gebremst. Einmal am Tag gibt es 20 Minuten Notfallzugang zu einer gesperrten Seite.

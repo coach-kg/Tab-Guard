@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.33.0
+- **Proxy and unblocker sites** (with the content filter on) are recognised and closed: pages that show other sites through a proxy (the real address coded into a frame or the page itself, e.g. Scramjet, Ultraviolet), unblocked-games sites, start pages that pretend to be Classroom or IXL, browser-style address bars, Games/Movies/Proxy menus, and web apps hidden in .svg files on code CDNs. Found sites are remembered; on shared hosts only that one project. The list is in the settings.
+- **Harder to remove in the inspector:** covers, block screens and filters come back within a second when deleted or hidden. Underneath a cover the video and its description are hidden too. Covers lifted on purpose (emergency access, a reveal) stay lifted.
+
 ## 1.32.0
 - **Calm view** in the popup: Normal · Grey · Blurred, for all sites, with "always normal on this site". Hovering a picture for a moment shows it. It is separate from the escalation ladder and applies at once.
 - **Guides for getting around blockers** (with the content filter on): on YouTube, results about unblocked games, proxy link drops or beating school filters are covered with a short note, such a video page gets a cover with an explanation, and description links to unblocker sites are switched off. Can be turned off in the settings (the change waits an hour, like other loosening).
