@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.31.2
+- Emergency access on a page that was blocked by the escalation ladder now lifts the block screen at once. Before, the page needed a manual reload.
+
 ## 1.31.1
 - Safer page building: no `innerHTML` any more. Text that comes from a web page is always inserted as plain text.
 - The extension's own modules (translations, the pause overlay) load through one function.
