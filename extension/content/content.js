@@ -1594,16 +1594,31 @@ setInterval(tgCheckGuards, 800);
     });
     return n;
   }
+  // Once a video is covered it stays covered: YouTube rebuilds the title and
+  // description several times while loading, and a moment without them must
+  // not lift the cover (that made it flash). It is only lifted after moving
+  // to another video whose own title is there and clean, twice in a row.
+  let bpCoveredFor = null, bpCoveredTitle = "", bpClean = 0;
   function bpWatchCheck() {
     const lib = bpLib(); if (!lib) return;
-    const onWatch = location.pathname === "/watch";
-    if (!onWatch) { bpUncover(); return; }
-    const title = (document.querySelector("ytd-watch-metadata h1, h1.ytd-watch-metadata, #title h1") || {}).textContent || document.title.replace(/ - YouTube$/, "");
+    if (location.pathname !== "/watch") { bpUncover(); bpCoveredFor = null; return; }
+    const vid = new URLSearchParams(location.search).get("v") || "";
+    const title = ((document.querySelector("ytd-watch-metadata h1, h1.ytd-watch-metadata, #title h1") || {}).textContent || "").trim();
     const descEl = document.querySelector("ytd-watch-metadata #description, #description-inline-expander, ytd-text-inline-expander, #description");
     const desc = descEl ? descEl.textContent || "" : "";
     const links = descEl ? bpLinks(descEl, false) : 0;
-    const hit = lib.score(title) >= 2 || lib.score(title + " " + desc.slice(0, 4000)) >= 3 || links >= 3;
-    if (hit) { if (descEl) bpLinks(descEl, true); bpCoverPage(); } else bpUncover();
+    const t = title || document.title.replace(/ - YouTube$/, "");
+    const hit = lib.score(t) >= 2 || lib.score(t + " " + desc.slice(0, 4000)) >= 3 || links >= 3;
+    if (hit) {
+      if (descEl) bpLinks(descEl, true);
+      bpCoverPage(); bpCoveredFor = vid; bpCoveredTitle = title; bpClean = 0;
+      return;
+    }
+    if (!bpCover) return;
+    if (bpCoveredFor === vid) return;                        // same video: stays covered
+    if (!title || title === bpCoveredTitle) return;          // the new video's details aren't there yet
+    if (++bpClean < 2) return;
+    bpUncover(); bpCoveredFor = null; bpClean = 0;
   }
   function bpCoverPage() {
     document.querySelectorAll("video").forEach(v => { try { v.pause(); } catch (_) {} });
@@ -1731,7 +1746,7 @@ setInterval(tgCheckGuards, 800);
         }).observe(document.documentElement, { childList: true, subtree: true });
       } catch (_) {}
       // YouTube changes pages without reloading
-      setInterval(() => { if (location.href !== bpLastUrl) { bpLastUrl = location.href; bpUncover(); setTimeout(bpScan, 900); } }, 700);
+      setInterval(() => { if (location.href !== bpLastUrl) { bpLastUrl = location.href; bpClean = 0; bpScan(); setTimeout(bpScan, 900); } }, 700);
     });
   }
 })();
