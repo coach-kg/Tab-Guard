@@ -11,6 +11,58 @@ function setHTML(el, html) {
   el.replaceChildren(...doc.body.childNodes);
 }
 
+// ---- tamper guard -------------------------------------------------------------
+// Covers and filters that Tab Guard puts up on purpose come back when someone
+// deletes or hides them in the inspector. Only what is meant to be there is
+// restored: a cover lifted on purpose (emergency access, a reveal, the end of a
+// lock) is gone from the state first, so it stays gone.
+const tgGuards = [];
+function tgGuard(g) { tgGuards.push(g); }
+function tgCoverStyle(el, z) {
+  el.setAttribute("style", `all:initial!important;position:fixed!important;inset:0!important;z-index:${z}!important;display:block!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;transform:none!important;filter:none!important;clip-path:none!important`);
+}
+function tgHidden(el) {
+  if (!el || !el.isConnected) return true;
+  try {
+    const cs = getComputedStyle(el), r = el.getBoundingClientRect();
+    if (cs.display === "none" || cs.visibility !== "visible" || parseFloat(cs.opacity) < 0.95 || cs.position !== "fixed") return true;
+    if (r.width < innerWidth * 0.9 || r.height < innerHeight * 0.9 || +cs.zIndex < 2147483000) return true;
+    if ((cs.transform && cs.transform !== "none") || (cs.clipPath && cs.clipPath !== "none") || (cs.filter && cs.filter !== "none")) return true;
+    const sr = el.shadowRoot;
+    if (sr) {
+      const w = sr.querySelector(".w");
+      if (!w) return true;
+      const ws = getComputedStyle(w);
+      if (ws.display === "none" || ws.visibility !== "visible" || parseFloat(ws.opacity) < 0.95) return true;
+    }
+  } catch (_) {}
+  return false;
+}
+// style elements that keep things hidden underneath a cover, by name
+const tgUnder = {};
+function tgUnderStyle(name, css) {
+  tgUnder[name] = css;
+  let el = document.getElementById("__tabguard_under_" + name);
+  if (!css) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement("style"); el.id = "__tabguard_under_" + name; }
+  if (el.textContent !== css) el.textContent = css;
+  const parent = document.head || document.documentElement;
+  if (!el.isConnected) parent.appendChild(el);
+}
+function tgCheckGuards() {
+  for (const [name, css] of Object.entries(tgUnder)) {
+    if (!css) continue;
+    const el = document.getElementById("__tabguard_under_" + name);
+    if (!el || el.textContent !== css || el.disabled || (el.media && el.media !== "all")) { if (el) el.remove(); tgUnderStyle(name, css); }
+  }
+  for (const g of tgGuards) { try { if (g.want() && (g.broken ? g.broken() : tgHidden(g.el()))) g.fix(); } catch (_) {} }
+}
+try {
+  new MutationObserver(() => tgCheckGuards()).observe(document.documentElement, { childList: true, attributes: true, attributeFilter: ["style", "class", "hidden"] });
+  if (document.head) new MutationObserver(() => tgCheckGuards()).observe(document.head, { childList: true, subtree: true, characterData: true });
+} catch (_) {}
+setInterval(tgCheckGuards, 800);
+
 (() => {
   const SAMPLE_MS = 500;
 
@@ -108,12 +160,65 @@ function setHTML(el, html) {
   }
 
   let stageLang = null;
-  function applyStage({ stage = "none", blurPx = 0, revealMs = 2000, value = 0, lang, fullBlur = false, disableLinks = false, allowReveal = true }) {
+  let lastStageMsg = null;
+  function applyStage(msg) { lastStageMsg = msg || {}; applyLadder(lastStageMsg); calmRender(); }
+
+  // ---- calm view (popup: Normal · Grey · Blurred) -----------------------------
+  // Your own way of looking at pages, separate from the escalation ladder.
+  // Kept in its own style element after the ladder's: while the ladder is
+  // active it wins (it is at least as strong), except that a blurred calm view
+  // keeps the blur on top of the ladder's grey. Hovering a picture for a moment
+  // shows it — only in the calm view, never while the ladder is greying.
+  const CALM_ID = "__tabguard_calm__";
+  const CALM_SEL = 'img,video,picture,[style*="background-image"]';
+  let CALM = { mode: "normal", except: [] }, calmLastCss = "";
+  tgGuard({ want: () => !!calmLastCss,
+    broken: () => { const el = document.getElementById(CALM_ID); return !el || !el.isConnected || el.disabled || el.textContent !== calmLastCss; },
+    fix: () => { const el = document.getElementById(CALM_ID); if (el) el.remove(); calmRender(); } });
+  function calmMode() {
+    if (!CALM || !CALM.mode || CALM.mode === "normal") return "normal";
+    const h = location.hostname.replace(/^www\./, "");
+    if ((CALM.except || []).some(d => h === d || h.endsWith("." + d))) return "normal";
+    return CALM.mode;
+  }
+  function calmRender() {
+    const mode = calmMode();
+    let el = document.getElementById(CALM_ID);
+    const ladderOn = currentStage !== "none" && !(Date.now() < revealUntil && currentStage !== "block");
+    let css = "";
+    if (mode !== "normal") {
+      if (ladderOn) {
+        if (mode === "blur" && currentStage === "grey") css = `${CALM_SEL}{filter:grayscale(1) blur(12px)!important}`;
+      } else if (mode === "grey") {
+        css = `${CALM_SEL}{filter:grayscale(1)!important;transition:filter .3s}`;
+      } else {
+        css = `${CALM_SEL}{filter:blur(12px) grayscale(.35)!important;transition:filter .15s}`
+          + `img:hover,video:hover,picture:hover img,a:hover img,a:hover video,:is(div,span,figure,button):hover>:is(img,video,picture)`
+          + `{filter:none!important;transition:filter .25s .6s!important}`;
+      }
+    }
+    calmLastCss = css;
+    if (!css) { if (el) el.remove(); return; }
+    if (!el) { el = document.createElement("style"); el.id = CALM_ID; }
+    el.textContent = css;
+    const parent = document.head || document.documentElement;
+    if (el.parentNode !== parent || el.nextElementSibling) parent.appendChild(el);   // stay after the ladder's style
+  }
+  function loadCalm() {
+    try { chrome.storage.local.get("tabguardView", g => { CALM = (g && g.tabguardView) || { mode: "normal", except: [] }; calmRender(); }); } catch (_) {}
+  }
+  try { chrome.storage.onChanged.addListener((c, a) => { if (a === "local" && c.tabguardView) { CALM = c.tabguardView.newValue || { mode: "normal" }; calmRender(); } }); } catch (_) {}
+  loadCalm();
+
+  function applyLadder({ stage = "none", blurPx = 0, revealMs = 2000, value = 0, lang, fullBlur = false, disableLinks = false, allowReveal = true }) {
     currentStage = stage;
     if (lang !== undefined) stageLang = lang;
     const rMs = allowReveal ? revealMs : false; // false → no reveal button
     const el = styleEl();
-    if (stage === "none" || Date.now() < revealUntil) { el.textContent = ""; removeReveal(); setNoCopy(false); if (stage === "block") ensureBlock(false); return; }
+    // "none" lifts everything, the block screen included (e.g. right after
+    // emergency access starts). A running reveal only lifts grey/blur.
+    if (stage === "none") { el.textContent = ""; removeReveal(); setNoCopy(false); ensureBlock(false); return; }
+    if (Date.now() < revealUntil && stage !== "block") { el.textContent = ""; removeReveal(); setNoCopy(false); return; }
 
     // Whole-page mode: blur the entire site including text, and make it
     // unselectable / uncopyable. Otherwise only media is affected.
@@ -234,18 +339,20 @@ function setHTML(el, html) {
   function doReveal() {
     revealUntil = Date.now() + 20000; // clear friction for 20s
     styleEl().textContent = "";
-    removeReveal();
+    removeReveal(); calmRender();
     if (revealTimer) clearTimeout(revealTimer);
     revealTimer = setTimeout(() => { safeSend({ type: "GET_STATUS" }, (s) => s && applyStage({ stage: s.stage })); }, 20000);
   }
 
   // Full "blocked" cover for the top stage.
   let blockHost = null;
+  let lastBlockValue = 0;
   function ensureBlock(on, value) {
+    if (on) lastBlockValue = value;
     if (!on) { if (blockHost) { blockHost.remove(); blockHost = null; } return; }
     if (blockHost) return;
     blockHost = document.createElement("div");
-    blockHost.style.cssText = "all:initial;position:fixed;inset:0;z-index:2147483646;";
+    tgCoverStyle(blockHost, 2147483646);
     document.documentElement.appendChild(blockHost);
     const root = blockHost.attachShadow({ mode: "open" });
     setHTML(root, `
@@ -270,6 +377,12 @@ function setHTML(el, html) {
       root.querySelectorAll("[data-t]").forEach(el => { el.textContent = m.t(stageLang, el.getAttribute("data-t")); });
     }).catch(() => {});
   }
+
+  tgGuard({ want: () => blockHost !== null, el: () => blockHost,
+    fix: () => { try { blockHost.remove(); } catch (_) {} blockHost = null; ensureBlock(true, lastBlockValue); } });
+  tgGuard({ want: () => !!(lastStageMsg && lastStageMsg.stage && lastStageMsg.stage !== "none" && !(Date.now() < revealUntil && lastStageMsg.stage !== "block")),
+    broken: () => { const el = document.getElementById(STYLE_ID); return !el || !el.isConnected || !el.textContent || el.disabled; },
+    fix: () => { const el = document.getElementById(STYLE_ID); if (el) el.remove(); applyLadder(lastStageMsg); calmRender(); } });
 
   // ---- emergency access -------------------------------------------------------
   // Once a day a blocked page can be opened for 20 minutes. A quiet link, a
@@ -954,7 +1067,9 @@ function setHTML(el, html) {
       if (sfUrlCover) return;
       const kind = (on && isShort) ? "sf_blocked" : "sf_swipe";
       sfUrlCover = document.createElement("div");
-      sfUrlCover.style.cssText = "all:initial;position:fixed;inset:0;z-index:2147483647;";
+      tgCoverStyle(sfUrlCover, 2147483647);
+      tgUnderStyle("sf", "video{visibility:hidden!important}");
+      document.querySelectorAll("video").forEach(v => { try { v.pause(); } catch (_) {} });
       document.documentElement.appendChild(sfUrlCover);
       const r = sfUrlCover.attachShadow({ mode: "open" });
       setHTML(r, `<style>.w{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
@@ -970,8 +1085,11 @@ function setHTML(el, html) {
       const _u=tgURL("assets/i18n.js"); if(!_u){removeReveal&&removeReveal();return;} tgImport(_u).then(m => {
         r.querySelectorAll("[data-t]").forEach(el => el.textContent = m.t(stageLang, el.getAttribute("data-t")));
       }).catch(() => {});
-    } else if (sfUrlCover) { sfUrlCover.remove(); sfUrlCover = null; }
+    } else if (sfUrlCover) { sfUrlCover.remove(); sfUrlCover = null; tgUnderStyle("sf", ""); }
   }
+
+  tgGuard({ want: () => sfUrlCover !== null, el: () => sfUrlCover,
+    fix: () => { try { sfUrlCover.remove(); } catch (_) {} sfUrlCover = null; sfMaybeBlockUrl(); } });
 
   // Level 3: catch portrait / short videos — when they play, and (pre-play,
   // on by default) as soon as their format is known: on load, for videos that
@@ -1401,6 +1519,7 @@ function setHTML(el, html) {
     if (!r) return;
     // the imported list's search rules, for searches posted as a form
     if (r.imported) { const si = searchInfo(); if (si.page && si.query) safeSend({ type: "SEARCH_QUERY", q: si.query.slice(0, 300) }); }
+    if (r.bypass) bypassStart();
     if (!r.enabled) return;
     const lib = (typeof globalThis !== "undefined" ? globalThis : self).TGAdultSignals;
     if (lib && r.terms && r.terms.length) lib.setExtraTerms(r.terms);
@@ -1419,4 +1538,227 @@ function setHTML(el, html) {
       } catch (_) {}
     }
   });
+
+  // ---- guides for getting around blockers (YouTube) ---------------------------
+  // With the content filter on: results whose title or snippet is about
+  // unblocked games, proxy link drops or beating school filters are covered
+  // with a short note; such a video page gets a cover with an explanation; links
+  // in descriptions that lead to such sites are switched off.
+  let bpOn = false, bpCover = null, bpTr = null, bpLastUrl = "";
+  const BP_ITEMS = "ytd-video-renderer,ytd-rich-item-renderer,ytd-compact-video-renderer,ytd-grid-video-renderer,ytd-playlist-renderer,ytd-reel-item-renderer,yt-lockup-view-model,ytm-video-with-context-renderer,ytm-compact-video-renderer";
+  function bpLib() { return (typeof globalThis !== "undefined" ? globalThis : self).TGBypass; }
+  function bpT(k) { return bpTr ? bpTr(k) : ""; }
+  function bpLoadText(cb) {
+    if (bpTr) return cb();
+    const u = tgURL("assets/i18n.js"); if (!u) return;
+    tgImport(u).then(m => { bpTr = (k) => m.t(stageLang || tgLang, k); cb(); }).catch(() => {});
+  }
+  function bpItemText(el) {
+    const parts = [];
+    el.querySelectorAll("#video-title,#video-title-link,h3,.yt-lockup-metadata-view-model-wiz__title,.metadata-snippet-text,#description-text,.yt-core-attributed-string").forEach(n => {
+      parts.push(n.getAttribute && n.getAttribute("title") || "", n.textContent || "");
+    });
+    return parts.join(" ").slice(0, 1500);
+  }
+  function tgCoverGone(c) {
+    try { const cs = getComputedStyle(c); return cs.display === "none" || cs.visibility !== "visible" || parseFloat(cs.opacity) < 0.9 || cs.position !== "absolute"; } catch (_) { return false; }
+  }
+  function bpCoverItem(el) {
+    if (el.__tgBp) return;
+    el.__tgBp = true;
+    if (getComputedStyle(el).position === "static") el.style.position = "relative";
+    const c = document.createElement("div");
+    c.setAttribute("data-tabguard", "bypass");
+    c.style.cssText = "position:absolute!important;inset:0!important;z-index:5!important;display:flex!important;visibility:visible!important;opacity:1!important;align-items:center;justify-content:center;text-align:center;padding:10px;"
+      + "background:var(--yt-spec-base-background,#0f0f0f);color:var(--yt-spec-text-secondary,#aaa);font:500 13px/1.4 Roboto,Arial,sans-serif;"
+      + "border:1px dashed rgba(128,128,128,.35);border-radius:12px;cursor:default";
+    c.textContent = "⃠ " + bpT("bp_hidden");
+    c.title = bpT("bp_why");
+    ["click", "mousedown", "pointerdown", "mouseover"].forEach(ev => c.addEventListener(ev, e => { e.stopPropagation(); if (ev === "click") e.preventDefault(); }, true));
+    el.appendChild(c);
+  }
+  function bpLinks(root, all) {
+    const lib = bpLib(); if (!lib) return 0;
+    let n = 0;
+    root.querySelectorAll('a[href*="/redirect?"],a[href^="http"]').forEach(a => {
+      const href = a.getAttribute("href") || "";
+      if (!lib.isBypassLink(href)) return;
+      if (!all && /script\.google\.com/.test(decodeURIComponent(href))) { n++; return; }   // Apps Script: only on a bypass video
+      n++;
+      if (a.__tgBp) return;
+      a.__tgBp = true;
+      a.removeAttribute("href");
+      a.style.textDecoration = "line-through"; a.style.opacity = ".55"; a.style.pointerEvents = "auto"; a.style.cursor = "not-allowed";
+      a.title = bpT("bp_link");
+      a.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); }, true);
+    });
+    return n;
+  }
+  // Once a video is covered it stays covered: YouTube rebuilds the title and
+  // description several times while loading, and a moment without them must
+  // not lift the cover (that made it flash). It is only lifted after moving
+  // to another video whose own title is there and clean, twice in a row.
+  let bpCoveredFor = null, bpCoveredTitle = "", bpClean = 0;
+  function bpWatchCheck() {
+    const lib = bpLib(); if (!lib) return;
+    if (location.pathname !== "/watch") { bpUncover(); bpCoveredFor = null; return; }
+    const vid = new URLSearchParams(location.search).get("v") || "";
+    const title = ((document.querySelector("ytd-watch-metadata h1, h1.ytd-watch-metadata, #title h1") || {}).textContent || "").trim();
+    const descEl = document.querySelector("ytd-watch-metadata #description, #description-inline-expander, ytd-text-inline-expander, #description");
+    const desc = descEl ? descEl.textContent || "" : "";
+    const links = descEl ? bpLinks(descEl, false) : 0;
+    const t = title || document.title.replace(/ - YouTube$/, "");
+    const hit = lib.score(t) >= 2 || lib.score(t + " " + desc.slice(0, 4000)) >= 3 || links >= 3;
+    if (hit) {
+      if (descEl) bpLinks(descEl, true);
+      bpCoverPage(); bpCoveredFor = vid; bpCoveredTitle = title; bpClean = 0;
+      return;
+    }
+    if (!bpCover) return;
+    if (bpCoveredFor === vid) return;                        // same video: stays covered
+    if (!title || title === bpCoveredTitle) return;          // the new video's details aren't there yet
+    if (++bpClean < 2) return;
+    bpUncover(); bpCoveredFor = null; bpClean = 0;
+  }
+  function bpCoverPage() {
+    document.querySelectorAll("video").forEach(v => { try { v.pause(); } catch (_) {} });
+    if (bpCover) return;
+    bpCover = document.createElement("div");
+    tgCoverStyle(bpCover, 2147483647);
+    // underneath, too: no picture, no description, no links — so removing the
+    // cover in the inspector leaves nothing to use
+    tgUnderStyle("bp", "#movie_player,video{visibility:hidden!important}ytd-watch-metadata #description,#description-inline-expander,ytd-text-inline-expander,#description,#comments{display:none!important}");
+    document.documentElement.appendChild(bpCover);
+    const r = bpCover.attachShadow({ mode: "open" });
+    setHTML(r, `<style>.w{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+      background:rgba(10,12,18,.95);backdrop-filter:blur(8px);font:16px/1.5 system-ui,sans-serif;color:#e8ebf2}
+      .c{text-align:center;max-width:400px;padding:30px}h1{font-size:21px;margin:8px 0}p{color:#9aa3b6;margin:0 0 18px}
+      button{font:inherit;font-weight:650;padding:11px 18px;border:0;border-radius:11px;cursor:pointer;background:#1b2130;color:#cdd4e4}</style>
+      <div class="w"><div class="c"><div style="font-size:40px">🧭</div><h1 id="t"></h1><p id="x"></p><button id="back"></button></div></div>`);
+    r.getElementById("t").textContent = bpT("bp_title");
+    r.getElementById("x").textContent = bpT("bp_text");
+    r.getElementById("back").textContent = bpT("sf_back");
+    r.getElementById("back").addEventListener("click", () => history.length > 1 ? history.back() : (location.href = "/"));
+  }
+  tgGuard({ want: () => bpCover !== null, el: () => bpCover,
+    fix: () => { try { bpCover.remove(); } catch (_) {} bpCover = null; bpCoverPage(); } });
+  setInterval(() => { if (bpCover || sfUrlCover) document.querySelectorAll("video").forEach(v => { if (!v.paused) try { v.pause(); } catch (_) {} }); }, 500);
+  function bpUncover() { if (bpCover) { bpCover.remove(); bpCover = null; tgUnderStyle("bp", ""); } }
+  document.addEventListener("play", (e) => { if (bpCover && e.target instanceof HTMLMediaElement) { try { e.target.pause(); } catch (_) {} } }, true);
+  function bpScan() {
+    if (!bpOn) return;
+    const lib = bpLib(); if (!lib) return;
+    // covers removed in the inspector come back
+    document.querySelectorAll("[data-tabguard-bpitem]").forEach(el => {
+      const c = el.querySelector(':scope > [data-tabguard="bypass"]');
+      if (!c || tgCoverGone(c)) { if (c) c.remove(); el.__tgBp = false; bpCoverItem(el); }
+    });
+    document.querySelectorAll(BP_ITEMS).forEach(el => {
+      if (el.__tgBp || el.querySelector('[data-tabguard="bypass"]')) return;
+      if (el.closest('[data-tabguard-bpitem]')) return;
+      if (lib.score(bpItemText(el)) >= 2) { const top = el.closest("ytd-rich-item-renderer") || el; top.setAttribute("data-tabguard-bpitem", ""); bpCoverItem(top); }
+    });
+    bpLinks(document, false);
+    bpWatchCheck();
+  }
+  // ---- proxy and unblocker sites ----------------------------------------------
+  // Recognised by what they are built like: a page hidden inside another
+  // (the real address coded into the frame's path), a tab title pretending to
+  // be Classroom or IXL, a browser-style address bar, a Games / Movies / Proxy
+  // menu, a web app hidden as an .svg file on a code CDN — plus the words.
+  // A found site is closed and remembered (by its project path on shared hosts).
+  let bsSent = false;
+  function bsFeatures() {
+    const lib = bpLib(); if (!lib) return null;
+    const host = location.hostname, why = [];
+    let s = 0;
+    if (lib.isProxyUrl(location.href)) { s += 6; why.push("proxyUrl"); }
+    for (const f of document.querySelectorAll("iframe[src],frame[src],embed[src],object[data]")) {
+      const src = f.getAttribute("src") || f.getAttribute("data") || "";
+      let abs = src; try { abs = new URL(src, location.href).href; } catch (_) {}
+      let same = false; try { same = new URL(abs).origin === location.origin; } catch (_) {}
+      if (lib.isProxyUrl(abs) || (same && lib.isFramedProxy(abs))) { s += 6; why.push("proxyFrame"); break; }
+    }
+    const root = document.documentElement;
+    const isSvgDoc = root && root.namespaceURI === "http://www.w3.org/2000/svg";
+    if (isSvgDoc && root.querySelector("script, foreignObject")) { s += lib.isBypassLink(location.href) ? 3 : 2; why.push("svgApp"); }
+    const meta = (sel) => { const m = document.querySelector(sel); return m ? m.getAttribute("content") || "" : ""; };
+    const heads = [...document.querySelectorAll("h1,h2,h3")].slice(0, 12).map(h => h.textContent).join(" ");
+    const labels = [...document.querySelectorAll("button,a,[role=button],[aria-label],nav *")].slice(0, 400)
+      .map(e => (e.getAttribute && (e.getAttribute("aria-label") || e.getAttribute("data-tab-label") || e.getAttribute("title"))) || (e.children.length ? "" : e.textContent || ""))
+      .map(x => String(x).trim().toLowerCase()).filter(x => x && x.length < 30);
+    const title = document.title || "";
+    const text = [title, meta('meta[name="description"]'), meta('meta[property="og:title"]'), meta('meta[property="og:description"]'), heads, labels.slice(0, 120).join(" ")].join(" \n ");
+    const ts = Math.min(4, lib.score(text) + (lib.score(title) >= 2 ? 1 : 0));
+    if (ts) { s += ts; why.push("text" + ts); }
+    if (lib.titleCloak(title, host)) { s += 2; why.push("cloak"); }
+    const barInput = [...document.querySelectorAll("input")].find(i => lib.looksLikeUrlBar(i.getAttribute("placeholder") || ""));
+    if (barInput) {
+      s += 2; why.push("urlBar");
+      // back / forward / reload buttons next to it: a browser inside the page
+      let box = barInput; for (let k = 0; k < 4 && box.parentElement; k++) box = box.parentElement;
+      const nav = [...box.querySelectorAll("button,[role=button],a")].filter(b => {
+        const l = ((b.getAttribute("aria-label") || "") + " " + (b.getAttribute("title") || "")).toLowerCase();
+        const ic = [...b.querySelectorAll("i,svg,span")].map(x => (x.getAttribute("class") || "") + " " + (x.getAttribute("data-lucide") || "")).join(" ");
+        return /\b(back|forward|refresh|reload)\b/.test(l) || /(chevron|arrow)-(left|right)|rotate-(right|cw)|redo|refresh|reload/.test(ic);
+      }).length;
+      if (nav >= 2) { s += 2; why.push("navButtons"); }
+    }
+    const L = new Set(labels);
+    const nav = ["games", "movies", "proxy", "apps", "browser", "vms", "tv", "music"].filter(k => L.has(k)).length;
+    if (L.has("games") && nav >= 2) { s += 2; why.push("menu"); }
+    try {
+      const sw = navigator.serviceWorker && navigator.serviceWorker.controller;
+      if (sw && /\/(uv|scram|scramjet|sj|bare|wisp|epoxy|proxy)[^/]*\.js|\b(uv\.sw|scramjet)/i.test(sw.scriptURL)) { s += 3; why.push("proxySW"); }
+    } catch (_) {}
+    return { score: s, why };
+  }
+  function bypassSiteCheck() {
+    if (bsSent || !bpOn) return;
+    const f = bsFeatures(); if (!f) return;
+    if (f.score >= 5) { bsSent = true; safeSend({ type: "BYPASS_SITE", url: location.href, why: f.why, score: f.score }); }
+  }
+  function bypassStart() {
+    if (bpOn) return;
+    bpOn = true;
+    if (/(^|\.)youtube\.com$/.test(location.hostname)) tgUnderStyle("bpitems", '[data-tabguard-bpitem]>:not([data-tabguard="bypass"]){visibility:hidden!important}');
+    if (!/(^|\.)youtube\.com$/.test(location.hostname)) {
+      bypassSiteCheck();
+      [1500, 4000, 9000, 20000].forEach(ms => setTimeout(bypassSiteCheck, ms));
+      let pend = false;
+      try {
+        // the full look runs during the first minute; after that only new
+        // frames are checked (a proxy opens its pages in one), which is cheap
+        const t0 = Date.now();
+        new MutationObserver(() => {
+          if (pend || bsSent) return;
+          pend = true;
+          setTimeout(() => {
+            pend = false;
+            if (Date.now() - t0 < 60000) return bypassSiteCheck();
+            const lib = bpLib();
+            for (const f of document.querySelectorAll("iframe[src],frame[src]")) {
+              let abs = f.getAttribute("src"); try { abs = new URL(abs, location.href).href; } catch (_) {}
+              let same = false; try { same = new URL(abs).origin === location.origin; } catch (_) {}
+              if (lib && (lib.isProxyUrl(abs) || (same && lib.isFramedProxy(abs)))) { bsSent = true; safeSend({ type: "BYPASS_SITE", url: location.href, why: ["proxyFrame"], score: 6 }); break; }
+            }
+          }, 1200);
+        })
+          .observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["src"] });
+      } catch (_) {}
+      return;
+    }
+    bpLoadText(() => {
+      bpScan();
+      let pend = false;
+      try {
+        new MutationObserver(() => {
+          if (pend) return;
+          pend = true; setTimeout(() => { pend = false; bpScan(); }, 600);
+        }).observe(document.documentElement, { childList: true, subtree: true });
+      } catch (_) {}
+      // YouTube changes pages without reloading
+      setInterval(() => { if (location.href !== bpLastUrl) { bpLastUrl = location.href; bpClean = 0; bpScan(); setTimeout(bpScan, 900); } }, 700);
+    });
+  }
 })();

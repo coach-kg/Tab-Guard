@@ -34,8 +34,9 @@ Made for brains that keep chasing the next new thing.
 | **Breathing pause + intention** | One breath, then one question: what are you here for? One clear word is enough. |
 | **Escalation ladder** | The longer you linger on watched sites, the greyer and blurrier images get, up to a block. The pressure eases off by itself. |
 | **Short-form filter** | Hides or blurs vertical short videos, also inside embedded players, and `/shorts/` or `/reels/` pages. Landscape videos stay untouched. |
+| **Calm view** | Grey or blur all pictures from the popup, with exceptions per site. Hover a moment to see one. |
 | **Video previews** | Stops hover-preview clips and freezes animated GIFs on their first frame. |
-| **Content filter** | Recognises adult sites by what's on the page, blocks them, and enforces SafeSearch on Google, Bing, DuckDuckGo, Brave, Yahoo and SearXNG. |
+| **Content filter** | Recognises adult sites by what's on the page, blocks them, and enforces SafeSearch on Google, Bing, DuckDuckGo, Brave, Yahoo and SearXNG. Proxy and unblocked-games sites are recognised by how they are built and closed; on YouTube, guides for getting around filters are hidden. |
 | **Blocklist, import, redirects** | Your own blocklist, imported lists (e.g. from Cold Turkey), and redirects such as reddit.com → a calmer front end. |
 | **Exits that cost a little** | Pausing or resetting waits a bit longer each time, with a daily budget you set. |
 | **Never blocked** | Helplines, health and government sites are never blocked or slowed. Once a day there's 20 minutes of emergency access to a blocked site. |

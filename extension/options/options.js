@@ -54,6 +54,7 @@ async function load() {
   $("adultSearch").checked = !(c.adultBlock && c.adultBlock.searchPause === false);
   $("adultGrey").checked = !(c.adultBlock && c.adultBlock.greyLinks === false);
   $("adultSafe").checked = !(c.adultBlock && c.adultBlock.safeSearch === false);
+  $("adultBypass").checked = !(c.adultBlock && c.adultBlock.bypass === false);
   $("adultTerms").value = ((c.adultBlock && c.adultBlock.terms) || []).join("\n");
   { const ex = { ...DEFAULTS.exits, ...(c.exits || {}) };
     $("exStart").value = String(+ex.startSeconds >= 10 ? 10 : 5);
@@ -67,6 +68,7 @@ async function load() {
   { const pv = { ...DEFAULTS.previews, ...(c.previews || {}) };
     $("pvOn").checked = pv.enabled !== false; $("pvGifs").checked = pv.freezeGifs !== false; $("pvAll").checked = !!pv.everywhere; $("pvSwap").checked = pv.hoverSwap !== false; }
   $("adultLearned").value = ((c.adultBlock && c.adultBlock.extraHosts) || []).join("\n");
+  $("bypassSites").value = ((c.adultBlock && c.adultBlock.bypassSites) || []).join("\n");
   $("streaming").value = (c.streamingHosts || []).join("\n");
   $("fullBlur").value = (c.fullBlurHosts || []).join("\n");
   $("fbAll").checked = !!c.fullBlurAll; $("fbLinks").checked = !!c.fullBlurDisableLinks;
@@ -120,9 +122,9 @@ async function save() {
   c.blocklist = lines($("blocklist").value);
   c.autoBlockOnLock = $("autoBlock").checked;
   c.adultBlock = { enabled: $("adult").checked, detect: $("adultDetect").checked, searchPause: $("adultSearch").checked,
-    greyLinks: $("adultGrey").checked, safeSearch: $("adultSafe").checked,
+    greyLinks: $("adultGrey").checked, safeSearch: $("adultSafe").checked, bypass: $("adultBypass").checked,
     terms: [...new Set($("adultTerms").value.split("\n").map(x => x.trim().toLowerCase()).filter(x => x.length >= 2))],
-    extraHosts: lines($("adultLearned").value) };
+    extraHosts: lines($("adultLearned").value), bypassSites: lines($("bypassSites").value) };
   c.previews = { enabled: $("pvOn").checked, freezeGifs: $("pvGifs").checked, everywhere: $("pvAll").checked, hoverSwap: $("pvSwap").checked };
   c.exits = { enabled: $("exOn").checked, budget: Math.max(0, Math.min(99, Math.round(+$("exBudget").value || 0))),
     startSeconds: +$("exStart").value >= 10 ? 10 : 5,
@@ -262,7 +264,7 @@ async function submitGate() {
 }
 
 // on/off state labels next to toggles
-const TOGGLES = ["sfPrePlay", "sfSwipe", "adultSafe", "pvSwap", "exOn", "exGrey", "adultSearch", "adultGrey", "pvOn", "pvGifs", "pvAll", "adultDetect", "proxyOn", "escOn", "dwellOn", "churnOn", "lnOn", "lockReset", "autoBlock", "adult", "intentOn", "srcOn", "sfOn", "sfPortrait", "sfBlockUrls", "fbAll", "fbLinks", "revealOn", "pgOn"];
+const TOGGLES = ["adultBypass", "sfPrePlay", "sfSwipe", "adultSafe", "pvSwap", "exOn", "exGrey", "adultSearch", "adultGrey", "pvOn", "pvGifs", "pvAll", "adultDetect", "proxyOn", "escOn", "dwellOn", "churnOn", "lnOn", "lockReset", "autoBlock", "adult", "intentOn", "srcOn", "sfOn", "sfPortrait", "sfBlockUrls", "fbAll", "fbLinks", "revealOn", "pgOn"];
 
 // ---- export / import --------------------------------------------------------
 async function exportSettings() {

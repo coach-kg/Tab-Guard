@@ -5,6 +5,21 @@
 (function () {
   "use strict";
   if (window.top === window) return;
+  // A page shown through a web proxy (the real address is coded into this
+  // frame's own): the whole tab is an unblocker site. The background decides
+  // (content filter on, not a trusted site) and closes it.
+  let lastHref = "";
+  function proxyCheck() {
+    if (location.href === lastHref) return;
+    lastHref = location.href;
+    try {
+      const B = globalThis.TGBypass;
+      let same = false; try { same = window.top.location.origin === location.origin; } catch (_) {}
+      if (B && (B.isProxyUrl(location.href) || (same && B.isFramedProxy(location.href)))) chrome.runtime.sendMessage({ type: "BYPASS_SITE" }, () => void chrome.runtime.lastError);
+    } catch (_) {}
+  }
+  proxyCheck();
+  setInterval(proxyCheck, 1500);
   let SF = null;
   const touched = new Set();
   const lib = () => globalThis.TGShortForm;
