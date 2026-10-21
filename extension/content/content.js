@@ -11,6 +11,58 @@ function setHTML(el, html) {
   el.replaceChildren(...doc.body.childNodes);
 }
 
+// ---- tamper guard -------------------------------------------------------------
+// Covers and filters that Tab Guard puts up on purpose come back when someone
+// deletes or hides them in the inspector. Only what is meant to be there is
+// restored: a cover lifted on purpose (emergency access, a reveal, the end of a
+// lock) is gone from the state first, so it stays gone.
+const tgGuards = [];
+function tgGuard(g) { tgGuards.push(g); }
+function tgCoverStyle(el, z) {
+  el.setAttribute("style", `all:initial!important;position:fixed!important;inset:0!important;z-index:${z}!important;display:block!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;transform:none!important;filter:none!important;clip-path:none!important`);
+}
+function tgHidden(el) {
+  if (!el || !el.isConnected) return true;
+  try {
+    const cs = getComputedStyle(el), r = el.getBoundingClientRect();
+    if (cs.display === "none" || cs.visibility !== "visible" || parseFloat(cs.opacity) < 0.95 || cs.position !== "fixed") return true;
+    if (r.width < innerWidth * 0.9 || r.height < innerHeight * 0.9 || +cs.zIndex < 2147483000) return true;
+    if ((cs.transform && cs.transform !== "none") || (cs.clipPath && cs.clipPath !== "none") || (cs.filter && cs.filter !== "none")) return true;
+    const sr = el.shadowRoot;
+    if (sr) {
+      const w = sr.querySelector(".w");
+      if (!w) return true;
+      const ws = getComputedStyle(w);
+      if (ws.display === "none" || ws.visibility !== "visible" || parseFloat(ws.opacity) < 0.95) return true;
+    }
+  } catch (_) {}
+  return false;
+}
+// style elements that keep things hidden underneath a cover, by name
+const tgUnder = {};
+function tgUnderStyle(name, css) {
+  tgUnder[name] = css;
+  let el = document.getElementById("__tabguard_under_" + name);
+  if (!css) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement("style"); el.id = "__tabguard_under_" + name; }
+  if (el.textContent !== css) el.textContent = css;
+  const parent = document.head || document.documentElement;
+  if (!el.isConnected) parent.appendChild(el);
+}
+function tgCheckGuards() {
+  for (const [name, css] of Object.entries(tgUnder)) {
+    if (!css) continue;
+    const el = document.getElementById("__tabguard_under_" + name);
+    if (!el || el.textContent !== css || el.disabled || (el.media && el.media !== "all")) { if (el) el.remove(); tgUnderStyle(name, css); }
+  }
+  for (const g of tgGuards) { try { if (g.want() && (g.broken ? g.broken() : tgHidden(g.el()))) g.fix(); } catch (_) {} }
+}
+try {
+  new MutationObserver(() => tgCheckGuards()).observe(document.documentElement, { childList: true, attributes: true, attributeFilter: ["style", "class", "hidden"] });
+  if (document.head) new MutationObserver(() => tgCheckGuards()).observe(document.head, { childList: true, subtree: true, characterData: true });
+} catch (_) {}
+setInterval(tgCheckGuards, 800);
+
 (() => {
   const SAMPLE_MS = 500;
 
@@ -108,7 +160,8 @@ function setHTML(el, html) {
   }
 
   let stageLang = null;
-  function applyStage(msg) { applyLadder(msg || {}); calmRender(); }
+  let lastStageMsg = null;
+  function applyStage(msg) { lastStageMsg = msg || {}; applyLadder(lastStageMsg); calmRender(); }
 
   // ---- calm view (popup: Normal · Grey · Blurred) -----------------------------
   // Your own way of looking at pages, separate from the escalation ladder.
@@ -118,7 +171,10 @@ function setHTML(el, html) {
   // shows it — only in the calm view, never while the ladder is greying.
   const CALM_ID = "__tabguard_calm__";
   const CALM_SEL = 'img,video,picture,[style*="background-image"]';
-  let CALM = { mode: "normal", except: [] };
+  let CALM = { mode: "normal", except: [] }, calmLastCss = "";
+  tgGuard({ want: () => !!calmLastCss,
+    broken: () => { const el = document.getElementById(CALM_ID); return !el || !el.isConnected || el.disabled || el.textContent !== calmLastCss; },
+    fix: () => { const el = document.getElementById(CALM_ID); if (el) el.remove(); calmRender(); } });
   function calmMode() {
     if (!CALM || !CALM.mode || CALM.mode === "normal") return "normal";
     const h = location.hostname.replace(/^www\./, "");
@@ -141,6 +197,7 @@ function setHTML(el, html) {
           + `{filter:none!important;transition:filter .25s .6s!important}`;
       }
     }
+    calmLastCss = css;
     if (!css) { if (el) el.remove(); return; }
     if (!el) { el = document.createElement("style"); el.id = CALM_ID; }
     el.textContent = css;
@@ -289,11 +346,13 @@ function setHTML(el, html) {
 
   // Full "blocked" cover for the top stage.
   let blockHost = null;
+  let lastBlockValue = 0;
   function ensureBlock(on, value) {
+    if (on) lastBlockValue = value;
     if (!on) { if (blockHost) { blockHost.remove(); blockHost = null; } return; }
     if (blockHost) return;
     blockHost = document.createElement("div");
-    blockHost.style.cssText = "all:initial;position:fixed;inset:0;z-index:2147483646;";
+    tgCoverStyle(blockHost, 2147483646);
     document.documentElement.appendChild(blockHost);
     const root = blockHost.attachShadow({ mode: "open" });
     setHTML(root, `
@@ -318,6 +377,12 @@ function setHTML(el, html) {
       root.querySelectorAll("[data-t]").forEach(el => { el.textContent = m.t(stageLang, el.getAttribute("data-t")); });
     }).catch(() => {});
   }
+
+  tgGuard({ want: () => blockHost !== null, el: () => blockHost,
+    fix: () => { try { blockHost.remove(); } catch (_) {} blockHost = null; ensureBlock(true, lastBlockValue); } });
+  tgGuard({ want: () => !!(lastStageMsg && lastStageMsg.stage && lastStageMsg.stage !== "none" && !(Date.now() < revealUntil && lastStageMsg.stage !== "block")),
+    broken: () => { const el = document.getElementById(STYLE_ID); return !el || !el.isConnected || !el.textContent || el.disabled; },
+    fix: () => { const el = document.getElementById(STYLE_ID); if (el) el.remove(); applyLadder(lastStageMsg); calmRender(); } });
 
   // ---- emergency access -------------------------------------------------------
   // Once a day a blocked page can be opened for 20 minutes. A quiet link, a
@@ -1002,7 +1067,9 @@ function setHTML(el, html) {
       if (sfUrlCover) return;
       const kind = (on && isShort) ? "sf_blocked" : "sf_swipe";
       sfUrlCover = document.createElement("div");
-      sfUrlCover.style.cssText = "all:initial;position:fixed;inset:0;z-index:2147483647;";
+      tgCoverStyle(sfUrlCover, 2147483647);
+      tgUnderStyle("sf", "video{visibility:hidden!important}");
+      document.querySelectorAll("video").forEach(v => { try { v.pause(); } catch (_) {} });
       document.documentElement.appendChild(sfUrlCover);
       const r = sfUrlCover.attachShadow({ mode: "open" });
       setHTML(r, `<style>.w{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
@@ -1018,8 +1085,11 @@ function setHTML(el, html) {
       const _u=tgURL("assets/i18n.js"); if(!_u){removeReveal&&removeReveal();return;} tgImport(_u).then(m => {
         r.querySelectorAll("[data-t]").forEach(el => el.textContent = m.t(stageLang, el.getAttribute("data-t")));
       }).catch(() => {});
-    } else if (sfUrlCover) { sfUrlCover.remove(); sfUrlCover = null; }
+    } else if (sfUrlCover) { sfUrlCover.remove(); sfUrlCover = null; tgUnderStyle("sf", ""); }
   }
+
+  tgGuard({ want: () => sfUrlCover !== null, el: () => sfUrlCover,
+    fix: () => { try { sfUrlCover.remove(); } catch (_) {} sfUrlCover = null; sfMaybeBlockUrl(); } });
 
   // Level 3: catch portrait / short videos — when they play, and (pre-play,
   // on by default) as soon as their format is known: on load, for videos that
@@ -1490,13 +1560,16 @@ function setHTML(el, html) {
     });
     return parts.join(" ").slice(0, 1500);
   }
+  function tgCoverGone(c) {
+    try { const cs = getComputedStyle(c); return cs.display === "none" || cs.visibility !== "visible" || parseFloat(cs.opacity) < 0.9 || cs.position !== "absolute"; } catch (_) { return false; }
+  }
   function bpCoverItem(el) {
     if (el.__tgBp) return;
     el.__tgBp = true;
     if (getComputedStyle(el).position === "static") el.style.position = "relative";
     const c = document.createElement("div");
     c.setAttribute("data-tabguard", "bypass");
-    c.style.cssText = "position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;text-align:center;padding:10px;"
+    c.style.cssText = "position:absolute!important;inset:0!important;z-index:5!important;display:flex!important;visibility:visible!important;opacity:1!important;align-items:center;justify-content:center;text-align:center;padding:10px;"
       + "background:var(--yt-spec-base-background,#0f0f0f);color:var(--yt-spec-text-secondary,#aaa);font:500 13px/1.4 Roboto,Arial,sans-serif;"
       + "border:1px dashed rgba(128,128,128,.35);border-radius:12px;cursor:default";
     c.textContent = "⃠ " + bpT("bp_hidden");
@@ -1536,7 +1609,10 @@ function setHTML(el, html) {
     document.querySelectorAll("video").forEach(v => { try { v.pause(); } catch (_) {} });
     if (bpCover) return;
     bpCover = document.createElement("div");
-    bpCover.style.cssText = "all:initial;position:fixed;inset:0;z-index:2147483647;";
+    tgCoverStyle(bpCover, 2147483647);
+    // underneath, too: no picture, no description, no links — so removing the
+    // cover in the inspector leaves nothing to use
+    tgUnderStyle("bp", "#movie_player,video{visibility:hidden!important}ytd-watch-metadata #description,#description-inline-expander,ytd-text-inline-expander,#description,#comments{display:none!important}");
     document.documentElement.appendChild(bpCover);
     const r = bpCover.attachShadow({ mode: "open" });
     setHTML(r, `<style>.w{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
@@ -1549,11 +1625,19 @@ function setHTML(el, html) {
     r.getElementById("back").textContent = bpT("sf_back");
     r.getElementById("back").addEventListener("click", () => history.length > 1 ? history.back() : (location.href = "/"));
   }
-  function bpUncover() { if (bpCover) { bpCover.remove(); bpCover = null; } }
+  tgGuard({ want: () => bpCover !== null, el: () => bpCover,
+    fix: () => { try { bpCover.remove(); } catch (_) {} bpCover = null; bpCoverPage(); } });
+  setInterval(() => { if (bpCover || sfUrlCover) document.querySelectorAll("video").forEach(v => { if (!v.paused) try { v.pause(); } catch (_) {} }); }, 500);
+  function bpUncover() { if (bpCover) { bpCover.remove(); bpCover = null; tgUnderStyle("bp", ""); } }
   document.addEventListener("play", (e) => { if (bpCover && e.target instanceof HTMLMediaElement) { try { e.target.pause(); } catch (_) {} } }, true);
   function bpScan() {
     if (!bpOn) return;
     const lib = bpLib(); if (!lib) return;
+    // covers removed in the inspector come back
+    document.querySelectorAll("[data-tabguard-bpitem]").forEach(el => {
+      const c = el.querySelector(':scope > [data-tabguard="bypass"]');
+      if (!c || tgCoverGone(c)) { if (c) c.remove(); el.__tgBp = false; bpCoverItem(el); }
+    });
     document.querySelectorAll(BP_ITEMS).forEach(el => {
       if (el.__tgBp || el.querySelector('[data-tabguard="bypass"]')) return;
       if (el.closest('[data-tabguard-bpitem]')) return;
@@ -1562,9 +1646,81 @@ function setHTML(el, html) {
     bpLinks(document, false);
     bpWatchCheck();
   }
+  // ---- proxy and unblocker sites ----------------------------------------------
+  // Recognised by what they are built like: a page hidden inside another
+  // (the real address coded into the frame's path), a tab title pretending to
+  // be Classroom or IXL, a browser-style address bar, a Games / Movies / Proxy
+  // menu, a web app hidden as an .svg file on a code CDN — plus the words.
+  // A found site is closed and remembered (by its project path on shared hosts).
+  let bsSent = false;
+  function bsFeatures() {
+    const lib = bpLib(); if (!lib) return null;
+    const host = location.hostname, why = [];
+    let s = 0;
+    if (lib.isProxyUrl(location.href)) { s += 6; why.push("proxyUrl"); }
+    for (const f of document.querySelectorAll("iframe[src],frame[src],embed[src],object[data]")) {
+      const src = f.getAttribute("src") || f.getAttribute("data") || "";
+      let abs = src; try { abs = new URL(src, location.href).href; } catch (_) {}
+      if (lib.isProxyUrl(abs)) { s += 6; why.push("proxyFrame"); break; }
+    }
+    const root = document.documentElement;
+    const isSvgDoc = root && root.namespaceURI === "http://www.w3.org/2000/svg";
+    if (isSvgDoc && root.querySelector("script, foreignObject")) { s += lib.isBypassLink(location.href) ? 3 : 2; why.push("svgApp"); }
+    const meta = (sel) => { const m = document.querySelector(sel); return m ? m.getAttribute("content") || "" : ""; };
+    const heads = [...document.querySelectorAll("h1,h2,h3")].slice(0, 12).map(h => h.textContent).join(" ");
+    const labels = [...document.querySelectorAll("button,a,[role=button],[aria-label],nav *")].slice(0, 400)
+      .map(e => (e.getAttribute && (e.getAttribute("aria-label") || e.getAttribute("data-tab-label") || e.getAttribute("title"))) || (e.children.length ? "" : e.textContent || ""))
+      .map(x => String(x).trim().toLowerCase()).filter(x => x && x.length < 30);
+    const title = document.title || "";
+    const text = [title, meta('meta[name="description"]'), meta('meta[property="og:title"]'), meta('meta[property="og:description"]'), heads, labels.slice(0, 120).join(" ")].join(" \n ");
+    const ts = Math.min(4, lib.score(text) + (lib.score(title) >= 2 ? 1 : 0));
+    if (ts) { s += ts; why.push("text" + ts); }
+    if (lib.titleCloak(title, host)) { s += 2; why.push("cloak"); }
+    const bar = [...document.querySelectorAll("input")].some(i => /(search\s*(or|&)\s*(enter|type)|enter\s+(a\s+)?(url|website|site|address)|type\s+(a\s+)?(url|website|address)|search\s+or\s+(go|enter))/i.test(i.getAttribute("placeholder") || ""));
+    if (bar) { s += 2; why.push("urlBar"); }
+    const L = new Set(labels);
+    const nav = ["games", "movies", "proxy", "apps", "browser", "vms", "tv", "music"].filter(k => L.has(k)).length;
+    if (L.has("games") && nav >= 2) { s += 2; why.push("menu"); }
+    try {
+      const sw = navigator.serviceWorker && navigator.serviceWorker.controller;
+      if (sw && /\/(uv|scram|scramjet|sj|bare|wisp|epoxy|proxy)[^/]*\.js|\b(uv\.sw|scramjet)/i.test(sw.scriptURL)) { s += 3; why.push("proxySW"); }
+    } catch (_) {}
+    return { score: s, why };
+  }
+  function bypassSiteCheck() {
+    if (bsSent || !bpOn) return;
+    const f = bsFeatures(); if (!f) return;
+    if (f.score >= 5) { bsSent = true; safeSend({ type: "BYPASS_SITE", url: location.href, why: f.why, score: f.score }); }
+  }
   function bypassStart() {
-    if (bpOn || !/(^|\.)youtube\.com$/.test(location.hostname)) return;
+    if (bpOn) return;
     bpOn = true;
+    if (/(^|\.)youtube\.com$/.test(location.hostname)) tgUnderStyle("bpitems", '[data-tabguard-bpitem]>:not([data-tabguard="bypass"]){visibility:hidden!important}');
+    if (!/(^|\.)youtube\.com$/.test(location.hostname)) {
+      bypassSiteCheck();
+      [1500, 4000, 9000, 20000].forEach(ms => setTimeout(bypassSiteCheck, ms));
+      let pend = false;
+      try {
+        // the full look runs during the first minute; after that only new
+        // frames are checked (a proxy opens its pages in one), which is cheap
+        const t0 = Date.now();
+        new MutationObserver(() => {
+          if (pend || bsSent) return;
+          pend = true;
+          setTimeout(() => {
+            pend = false;
+            if (Date.now() - t0 < 60000) return bypassSiteCheck();
+            const lib = bpLib();
+            for (const f of document.querySelectorAll("iframe[src],frame[src]")) {
+              let abs = f.getAttribute("src"); try { abs = new URL(abs, location.href).href; } catch (_) {}
+              if (lib && lib.isProxyUrl(abs)) { bsSent = true; safeSend({ type: "BYPASS_SITE", url: location.href, why: ["proxyFrame"], score: 6 }); break; }
+            }
+          }, 1200);
+        })
+          .observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["src"] });
+      } catch (_) {}
+      return;
+    }
     bpLoadText(() => {
       bpScan();
       let pend = false;

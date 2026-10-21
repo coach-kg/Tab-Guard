@@ -68,6 +68,7 @@ async function load() {
   { const pv = { ...DEFAULTS.previews, ...(c.previews || {}) };
     $("pvOn").checked = pv.enabled !== false; $("pvGifs").checked = pv.freezeGifs !== false; $("pvAll").checked = !!pv.everywhere; $("pvSwap").checked = pv.hoverSwap !== false; }
   $("adultLearned").value = ((c.adultBlock && c.adultBlock.extraHosts) || []).join("\n");
+  $("bypassSites").value = ((c.adultBlock && c.adultBlock.bypassSites) || []).join("\n");
   $("streaming").value = (c.streamingHosts || []).join("\n");
   $("fullBlur").value = (c.fullBlurHosts || []).join("\n");
   $("fbAll").checked = !!c.fullBlurAll; $("fbLinks").checked = !!c.fullBlurDisableLinks;
@@ -123,7 +124,7 @@ async function save() {
   c.adultBlock = { enabled: $("adult").checked, detect: $("adultDetect").checked, searchPause: $("adultSearch").checked,
     greyLinks: $("adultGrey").checked, safeSearch: $("adultSafe").checked, bypass: $("adultBypass").checked,
     terms: [...new Set($("adultTerms").value.split("\n").map(x => x.trim().toLowerCase()).filter(x => x.length >= 2))],
-    extraHosts: lines($("adultLearned").value) };
+    extraHosts: lines($("adultLearned").value), bypassSites: lines($("bypassSites").value) };
   c.previews = { enabled: $("pvOn").checked, freezeGifs: $("pvGifs").checked, everywhere: $("pvAll").checked, hoverSwap: $("pvSwap").checked };
   c.exits = { enabled: $("exOn").checked, budget: Math.max(0, Math.min(99, Math.round(+$("exBudget").value || 0))),
     startSeconds: +$("exStart").value >= 10 ? 10 : 5,

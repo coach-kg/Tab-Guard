@@ -13,7 +13,8 @@ import { hostFromUrl, isAllowlisted, isSystemUrl, normalizeHost, makeHostMatcher
 import { isAdultHost } from "./src/adultList.js";
 import "./src/adultSignals.js";            // plain script: sets globalThis.TGAdultSignals
 import { t as i18nT } from "./assets/i18n.js";
-import { IMPORT_KEY, IMPORT_NEXT_KEY, makeImportMatcher } from "./src/importList.js";
+import { IMPORT_KEY, IMPORT_NEXT_KEY, makeImportMatcher, parseImport } from "./src/importList.js";
+import "./src/bypass.js";                  // plain script: sets self.TGBypass
 import { applyDue } from "./src/loosen.js";
 import { isEssentialHost } from "./src/essential.js";
 
@@ -36,6 +37,29 @@ function buildMatchers(c) {
   mBlock = makeHostMatcher(c.blocklist);
   mStreaming = makeHostMatcher(c.streamingHosts);
   mFullBlur = makeHostMatcher(c.fullBlurHosts);
+  // proxy / unblocker sites found so far (host, or host + project path)
+  const bl = (c.adultBlock && Array.isArray(c.adultBlock.bypassSites)) ? c.adultBlock.bypassSites : [];
+  try { mBypass = bl.length ? makeImportMatcher(parseImport(bl.join("\n"))) : null; } catch (_) { mBypass = null; }
+}
+let mBypass = null;
+function bypassOn() { const ab = cfg && cfg.adultBlock || {}; return !!ab.enabled && ab.bypass !== false; }
+// A known unblocker site, or an address that is itself a proxy page.
+function bypassBlocked(host, url) {
+  if (!bypassOn() || !host || trusted(host) || isSystemUrl(url)) return false;
+  try { if (mBypass && mBypass(url)) return true; } catch (_) {}
+  const B = self.TGBypass;
+  return !!(B && B.isProxyUrl(url));
+}
+async function rememberBypassSite(url) {
+  const B = self.TGBypass; const key = B && B.siteKey(url);
+  if (!key) return;
+  const c = (await chrome.storage.local.get("tabguardConfig")).tabguardConfig || {};
+  const ab = { ...(c.adultBlock || {}) };
+  const list = Array.isArray(ab.bypassSites) ? ab.bypassSites : [];
+  if (list.includes(key)) return;
+  ab.bypassSites = [...list, key].slice(-2000);
+  c.adultBlock = ab;
+  await chrome.storage.local.set({ tabguardConfig: c });
 }
 function fullBlurFor(host) { return !!(cfg.fullBlurAll || (mFullBlur && mFullBlur.has(host))); }
 
@@ -283,6 +307,7 @@ async function countNewTab(tabId, url) {
 
   if (hardBlocked(host)) return redirectToCooldown(tabId, host, blockReason(host), url);
   if (importBlocked(host, url)) return redirectToCooldown(tabId, host, "import", url);
+  if (bypassBlocked(host, url)) return redirectToCooldown(tabId, host, "proxy", url);
   { const r = redirectTarget(host, url); if (r) { await redirectVia(tabId, host, r); return; } }
   if (paused()) return;                       // no counting, no locks while paused
   if (breaker.isLocked(host, now)) return redirectToCooldown(tabId, host, "locked", url);
@@ -331,6 +356,9 @@ chrome.tabs.onUpdated.addListener(async (tabId, info, tab) => {
   // in-page navigation (reddit, YouTube…) changes the address without a load
   if (isWatched && (info.status === "loading" || info.url) && !onCooldownPage && importBlocked(host, tab.url)) {
     return redirectToCooldown(tabId, host, "import", tab.url);
+  }
+  if (isWatched && (info.status === "loading" || info.url) && !onCooldownPage && bypassBlocked(host, tab.url)) {
+    return redirectToCooldown(tabId, host, "proxy", tab.url);
   }
   if (isWatched && info.status === "loading" && !onCooldownPage) {
     const ss = safeSearchUrl(tab.url);
@@ -683,6 +711,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         if (adult) { await rememberAdultHost(host); redirectToCooldown(tabId, host, "adult"); }
         return sendResponse({ adult, score: r.score, why: r.why });
       }
+      case "BYPASS_SITE": {
+        // the page looks like a proxy / unblocker site (content script) — or a
+        // frame inside it is showing a page through a proxy (frame script)
+        const tabUrl = (sender.tab && sender.tab.url) || msg.url || "";
+        const th = hostFromUrl(tabUrl);
+        if (!bypassOn() || tabId == null || !th || trusted(th) || isSystemUrl(tabUrl)) return sendResponse({});
+        await rememberBypassSite(tabUrl);
+        redirectToCooldown(tabId, th, "proxy");
+        return sendResponse({ blocked: true });
+      }
       case "BLOCK_ADULT": {
         // content script found an RTA label on a page we don't list
         if (cfg.adultBlock?.enabled && tabId != null && host && !trusted(host)) {
@@ -699,7 +737,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         const h = normalizeHost(msg.host || host || "");
         if (!h) return sendResponse({ error: "host" });
         if (emerg.day === dayKey()) return sendResponse({ error: "used" });
-        if (msg.reason === "adult" || msg.reason === "unfiltered") return sendResponse({ error: "reason" });   // not for the content filter
+        if (msg.reason === "adult" || msg.reason === "unfiltered" || msg.reason === "proxy") return sendResponse({ error: "reason" });   // not for the content filter
         emerg = { day: dayKey(), grant: { domain: baseDomain(h), until: Date.now() + EMERG_MS, reason: msg.reason || "stage", url: msg.url || "", media: 0, switches: 0 } };
         await saveEmerg();
         broadcastStage();

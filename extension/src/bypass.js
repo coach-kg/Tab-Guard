@@ -57,5 +57,63 @@
     return false;
   }
 
-  self.TGBypass = { norm, score, isBypassLink };
+  // ---- proxies and unblocker sites ------------------------------------------
+  // A web proxy hides the real address inside its own:
+  //   …/~/sj/6qgk/w70b/https%3A%2F%2Fduckduckgo.com%2F%3Fq%3D…   (Scramjet)
+  //   …/uv/service/hvtrs8%2F-duckduckgo.com…                     (Ultraviolet, xor-coded)
+  //   …/service/https://example.com/…, /scram/…, /proxy/…
+  const MARKER = /\/(~|uv|sj|scram|scramjet|service|proxy|prox|browse|surf)\//i;
+  const NOT_PROXY = /(^|\.)(web\.archive\.org|archive\.(ph|today|is|org)|translate\.goog)$/;
+  function uvDecode(s) {
+    let d = s; try { d = decodeURIComponent(s); } catch (_) {}
+    return d.split("").map((c, i) => (i % 2 ? String.fromCharCode(c.charCodeAt(0) ^ 2) : c)).join("");
+  }
+  function asUrl(s) { try { const u = new URL(s); return /^https?:$/.test(u.protocol) && u.hostname.includes(".") ? u.href : null; } catch (_) { return null; } }
+  // The address a proxy is showing, or null.
+  function embeddedTarget(href) {
+    let u; try { u = new URL(href); } catch (_) { return null; }
+    if (NOT_PROXY.test(u.hostname)) return null;
+    const path = u.pathname;
+    let i = path.search(/\/hvtrs8(%2F|\/)/i);
+    if (i >= 0) return asUrl(uvDecode(path.slice(i + 1) + u.search));
+    i = path.search(/\/https?%3A%2F%2F/i);
+    if (i >= 0) { const seg = path.slice(i + 1).split("/")[0]; try { return asUrl(decodeURIComponent(seg)); } catch (_) { return null; } }
+    i = path.search(/\/https?:\/\//i);
+    if (i >= 0) return asUrl(path.slice(i + 1) + u.search);
+    return null;
+  }
+  // A proxy's own page: an embedded address behind a typical proxy folder
+  // (or Ultraviolet's coding, which is unmistakable).
+  function isProxyUrl(href) {
+    const t = embeddedTarget(href);
+    if (!t) return false;
+    let u; try { u = new URL(href); } catch (_) { return false; }
+    return /\/hvtrs8/i.test(u.pathname) || MARKER.test(u.pathname);
+  }
+  // Pages pretending to be a school tool in the tab title.
+  const CLOAK = /^(home\s*[-|–]\s*)?(google\s+)?(classroom|docs|drive|my drive|ixl|clever|canvas|schoology|khan academy|quizlet|google|google docs|google drive|desmos)(\s*[-|–]\s*(home|google))?$/i;
+  const CLOAK_HOSTS = /(^|\.)(google\.com|ixl\.com|clever\.com|instructure\.com|schoology\.com|khanacademy\.org|quizlet\.com|desmos\.com)$/;
+  function titleCloak(title, host) {
+    return CLOAK.test(String(title || "").trim()) && !CLOAK_HOSTS.test(String(host || "").toLowerCase());
+  }
+  // What to remember for a found site. On shared hosts (code CDNs, Google
+  // Sites, buckets, Apps Script) that is the path of that one project, never
+  // the whole host.
+  function siteKey(href) {
+    let u; try { u = new URL(href); } catch (_) { return null; }
+    const h = u.hostname.toLowerCase().replace(/^www\./, "");
+    const seg = u.pathname.toLowerCase().split("/").filter(Boolean).map(x => x.replace(/@[^/]*$/, ""));
+    const take = (n) => (seg.length ? h + "/" + seg.slice(0, n).join("/") : h);
+    if (/(^|\.)jsdelivr\.net(\.cn)?$|(^|\.)jsdeliver\.us$|(^|\.)jsdmirror\.com$|(^|\.)statically\.io$|(^|\.)staticdelivr\.com$/.test(h)) return take(seg[0] === "gh" ? 3 : 2);
+    if (/(^|\.)esm\.sh$/.test(h)) return take(seg[0] === "gh" ? 3 : 1);
+    if (/(^|\.)unpkg\.com$/.test(h)) return take(1);
+    if (/(^|\.)githack\.com$|^raw\.githubusercontent\.com$|^gitcdn\./.test(h)) return take(2);
+    if (h === "sites.google.com") return take(2);
+    if (h === "storage.googleapis.com" || h === "s3.amazonaws.com") return take(1);
+    if (h === "script.google.com") return take(3);
+    if (h === "github.io" || h === "pages.dev") return h;
+    return h;
+  }
+
+  self.TGBypass = { norm, score, isBypassLink, embeddedTarget, isProxyUrl, titleCloak, siteKey };
 })();
