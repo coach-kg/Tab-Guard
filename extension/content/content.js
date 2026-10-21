@@ -113,7 +113,10 @@ function setHTML(el, html) {
     if (lang !== undefined) stageLang = lang;
     const rMs = allowReveal ? revealMs : false; // false → no reveal button
     const el = styleEl();
-    if (stage === "none" || Date.now() < revealUntil) { el.textContent = ""; removeReveal(); setNoCopy(false); if (stage === "block") ensureBlock(false); return; }
+    // "none" lifts everything, the block screen included (e.g. right after
+    // emergency access starts). A running reveal only lifts grey/blur.
+    if (stage === "none") { el.textContent = ""; removeReveal(); setNoCopy(false); ensureBlock(false); return; }
+    if (Date.now() < revealUntil && stage !== "block") { el.textContent = ""; removeReveal(); setNoCopy(false); return; }
 
     // Whole-page mode: blur the entire site including text, and make it
     // unselectable / uncopyable. Otherwise only media is affected.
