@@ -34,6 +34,17 @@
   button:hover { border-color: var(--accent); }
   button:disabled { opacity: .55; cursor: default; border-color: var(--line-2); }
 
+
+  .view { margin-top: 12px; }
+  .view .vh { font-size: 12px; color: var(--faint); margin-bottom: 6px; }
+  .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 3px; border-radius: 11px; background: var(--panel); border: 1px solid var(--line-2); }
+  .seg button { font-size: 12.5px; font-weight: 600; padding: 6px 4px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); }
+  .seg button:hover { color: var(--ink); }
+  .seg button[aria-checked="true"] { background: var(--panel-2); color: var(--ink); box-shadow: 0 0 0 1px var(--line-2); }
+  .vhere { display: flex; align-items: center; gap: 7px; margin-top: 7px; font-size: 12px; color: var(--muted); cursor: pointer; }
+  .vhere input { margin: 0; accent-color: var(--accent); }
+  .vnote { margin: 5px 0 0; font-size: 11px; color: var(--faint); }
+
   .foot { margin-top: 12px; font-size: 11px; line-height: 1.5; color: var(--faint); }
 </style>
 </head>
@@ -50,6 +61,17 @@
     <div class="row"><span class="k"><span class="ic">⏱️</span><span data-i18n="activeHere">active here</span></span><span class="v" id="mins">0.0m</span></div>
     <div class="row" id="pgRow" style="display:none;cursor:default"><span class="k"><span class="ic">📄</span><span data-i18n="pg_row">feed</span></span><span class="v" id="pgState" style="font-size:12px;text-align:right">—</span></div>
     <div class="row" id="lockRow" style="display:none"><span class="k"><span class="ic">🔒</span><span data-i18n="lockedRow">locked</span></span><span class="v" id="lockLeft">—</span></div>
+
+    <div class="view" id="viewBox">
+      <div class="vh" data-i18n="view_lbl">View</div>
+      <div class="seg" role="radiogroup">
+        <button type="button" role="radio" data-mode="normal" data-i18n="view_normal">Normal</button>
+        <button type="button" role="radio" data-mode="grey" data-i18n="view_grey">Grey</button>
+        <button type="button" role="radio" data-mode="blur" data-i18n="view_blur">Blurred</button>
+      </div>
+      <label class="vhere" id="viewHereRow" style="display:none"><input type="checkbox" id="viewHere"><span data-i18n="view_here">Always normal on this site</span></label>
+      <p class="vnote" id="viewNote" style="display:none" data-i18n="view_note"></p>
+    </div>
 
     <div class="actions">
       <button id="unlock" style="display:none" data-i18n="unlockDomain">unlock this domain</button>

@@ -629,7 +629,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         const on = !!ab.enabled && !(host && trusted(host));
         return sendResponse({ enabled: on, searchPause: on && ab.searchPause !== false, greyLinks: on && ab.greyLinks !== false,
           safeSearch: on && ab.safeSearch !== false, terms: Array.isArray(ab.terms) ? ab.terms.slice(0, 500) : [],
-          imported: !!mImport && !(host && trusted(host)) });
+          imported: !!mImport && !(host && trusted(host)),
+          bypass: !!ab.enabled && ab.bypass !== false });          // a hard rule, also on trusted sites
       }
       case "ADULT_LINKS": {
         // which of these link targets are known or recognised adult sites?

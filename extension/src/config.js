@@ -25,7 +25,7 @@ export const DEFAULT_CONFIG = {
   // the voluntary RTA label. Turning this OFF is gated by the settings lock.
   // searchPause: breathing pause when a search contains explicit terms;
   // greyLinks: links to known/recognised adult sites are greyed and inert.
-  adultBlock: { enabled: false, detect: true, searchPause: true, greyLinks: true, safeSearch: true, terms: [], extraHosts: [] },
+  adultBlock: { enabled: false, detect: true, searchPause: true, greyLinks: true, safeSearch: true, bypass: true, terms: [], extraHosts: [] },
 
   // Sites where the escalation blur should cover the WHOLE page (text too) and
   // make text unselectable / uncopyable — not just the images. Everything else

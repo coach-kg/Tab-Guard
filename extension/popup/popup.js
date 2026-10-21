@@ -210,9 +210,37 @@ async function feedHighlight(on) {
 $("pgRow").addEventListener("mouseenter", () => feedHighlight(true));
 $("pgRow").addEventListener("mouseleave", () => feedHighlight(false));
 
+// Calm view: Normal · Grey · Blurred, everywhere, with a per-site exception.
+// Applies at once (it is a comfort setting, not protection).
+async function renderView() {
+  const v = (await chrome.storage.local.get("tabguardView")).tabguardView || { mode: "normal", except: [] };
+  const { host } = await currentHost();
+  const mode = v.mode || "normal";
+  document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-checked", String(b.dataset.mode === mode)));
+  const except = Array.isArray(v.except) ? v.except : [];
+  const here = !!host && except.includes(host);
+  $("viewHereRow").style.display = (mode !== "normal" && host) ? "flex" : "none";
+  $("viewHere").checked = here;
+  $("viewNote").style.display = (mode === "blur" && !here) ? "block" : "none";
+}
+async function saveView(patch) {
+  const v = (await chrome.storage.local.get("tabguardView")).tabguardView || { mode: "normal", except: [] };
+  await chrome.storage.local.set({ tabguardView: { mode: "normal", except: [], ...v, ...patch } });
+  renderView();
+}
+document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => saveView({ mode: b.dataset.mode })));
+$("viewHere").addEventListener("change", async () => {
+  const { host } = await currentHost(); if (!host) return;
+  const v = (await chrome.storage.local.get("tabguardView")).tabguardView || {};
+  const set = new Set(Array.isArray(v.except) ? v.except : []);
+  if ($("viewHere").checked) set.add(host); else set.delete(host);
+  saveView({ except: [...set] });
+});
+
 (async () => {
   const cfg = (await chrome.storage.local.get("tabguardConfig")).tabguardConfig || {};
   LANG = cfg.language || "auto";
   apply(document, LANG);
   render();
+  renderView();
 })();
