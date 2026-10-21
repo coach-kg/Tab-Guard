@@ -115,5 +115,42 @@
     return h;
   }
 
-  self.TGBypass = { norm, score, isBypassLink, embeddedTarget, isProxyUrl, titleCloak, siteKey };
+  // Addresses hidden in a frame's query, plain or Base64:
+  //   logo-….svg?w1=d3NzOi8v…&go=aHR0cHM6Ly9zZXguY29t  →  wss://… and https://sex.com
+  function b64(v) {
+    try { const t = atob(v.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((v.length + 3) % 4)); return /^[\x20-\x7e]+$/.test(t) ? t : ""; } catch (_) { return ""; }
+  }
+  function paramTargets(href) {
+    let u; try { u = new URL(href); } catch (_) { return []; }
+    const out = [];
+    for (const [, v] of u.searchParams) {
+      if (!v || v.length < 8) continue;
+      if (/^(https?|wss?):\/\/[^/]+\.[a-z]/i.test(v)) out.push(v);
+      else if (/^[A-Za-z0-9+/_-]{8,}={0,2}$/.test(v)) { const d = b64(v); if (/^(https?|wss?):\/\/[^/]+\.[a-z]/i.test(d)) out.push(d); }
+    }
+    return out;
+  }
+  // A frame of the same site that is handed another site's address (Base64-coded,
+  // or a websocket relay): a proxy tab. Only for same-origin frames — ads and
+  // embeds from other sites pass addresses around for harmless reasons.
+  function isFramedProxy(href) {
+    const t = paramTargets(href);
+    if (!t.length) return false;
+    let u; try { u = new URL(href); } catch (_) { return false; }
+    const coded = [...u.searchParams.values()].some(v => /^[A-Za-z0-9+/_-]{8,}={0,2}$/.test(v) && /^(https?|wss?):\/\//i.test(b64(v)));
+    return coded || t.some(x => /^wss?:/i.test(x));
+  }
+  // "s3arc7 or u3l", "Search or enter website name", "Enter URL" …
+  // Digits and symbols in the placeholder count as wildcards.
+  const BAR = ["search or url", "search or enter url", "search or type a url", "search or type url", "search or enter website name",
+    "search or enter address", "search or enter a url", "search the web or enter url", "search or enter website", "enter url", "enter a url", "type a url", "search or go to url"];
+  function looksLikeUrlBar(ph) {
+    const t = String(ph || "").toLowerCase().replace(/\s+/g, " ").trim();
+    if (!t || t.length > 60) return false;
+    const fit = (a, b) => a.length === b.length && [...a].every((c, i) => c === b[i] || /[0-9@$|!*_]/.test(c));
+    for (const p of BAR) for (let i = 0; i + p.length <= t.length; i++) if (fit(t.slice(i, i + p.length), p)) return true;
+    return false;
+  }
+
+  self.TGBypass = { norm, score, isBypassLink, embeddedTarget, isProxyUrl, titleCloak, siteKey, paramTargets, isFramedProxy, looksLikeUrlBar };
 })();
