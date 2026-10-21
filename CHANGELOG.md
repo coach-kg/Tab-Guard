@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.33.1
+- YouTube: a covered video no longer flashes while the page loads. The cover stays for that video and is only lifted after moving on to a video whose own details are clean.
+
 ## 1.33.0
 - **Proxy and unblocker sites** (with the content filter on) are recognised and closed: pages that show other sites through a proxy (the real address coded into a frame or the page itself, e.g. Scramjet, Ultraviolet), unblocked-games sites, start pages that pretend to be Classroom or IXL, browser-style address bars, Games/Movies/Proxy menus, and web apps hidden in .svg files on code CDNs. Found sites are remembered; on shared hosts only that one project. The list is in the settings.
 - **Harder to remove in the inspector:** covers, block screens and filters come back within a second when deleted or hidden. Underneath a cover the video and its description are hidden too. Covers lifted on purpose (emergency access, a reveal) stay lifted.
