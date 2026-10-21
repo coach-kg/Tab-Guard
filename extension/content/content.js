@@ -108,7 +108,52 @@ function setHTML(el, html) {
   }
 
   let stageLang = null;
-  function applyStage({ stage = "none", blurPx = 0, revealMs = 2000, value = 0, lang, fullBlur = false, disableLinks = false, allowReveal = true }) {
+  function applyStage(msg) { applyLadder(msg || {}); calmRender(); }
+
+  // ---- calm view (popup: Normal · Grey · Blurred) -----------------------------
+  // Your own way of looking at pages, separate from the escalation ladder.
+  // Kept in its own style element after the ladder's: while the ladder is
+  // active it wins (it is at least as strong), except that a blurred calm view
+  // keeps the blur on top of the ladder's grey. Hovering a picture for a moment
+  // shows it — only in the calm view, never while the ladder is greying.
+  const CALM_ID = "__tabguard_calm__";
+  const CALM_SEL = 'img,video,picture,[style*="background-image"]';
+  let CALM = { mode: "normal", except: [] };
+  function calmMode() {
+    if (!CALM || !CALM.mode || CALM.mode === "normal") return "normal";
+    const h = location.hostname.replace(/^www\./, "");
+    if ((CALM.except || []).some(d => h === d || h.endsWith("." + d))) return "normal";
+    return CALM.mode;
+  }
+  function calmRender() {
+    const mode = calmMode();
+    let el = document.getElementById(CALM_ID);
+    const ladderOn = currentStage !== "none" && !(Date.now() < revealUntil && currentStage !== "block");
+    let css = "";
+    if (mode !== "normal") {
+      if (ladderOn) {
+        if (mode === "blur" && currentStage === "grey") css = `${CALM_SEL}{filter:grayscale(1) blur(12px)!important}`;
+      } else if (mode === "grey") {
+        css = `${CALM_SEL}{filter:grayscale(1)!important;transition:filter .3s}`;
+      } else {
+        css = `${CALM_SEL}{filter:blur(12px) grayscale(.35)!important;transition:filter .15s}`
+          + `img:hover,video:hover,picture:hover img,a:hover img,a:hover video,:is(div,span,figure,button):hover>:is(img,video,picture)`
+          + `{filter:none!important;transition:filter .25s .6s!important}`;
+      }
+    }
+    if (!css) { if (el) el.remove(); return; }
+    if (!el) { el = document.createElement("style"); el.id = CALM_ID; }
+    el.textContent = css;
+    const parent = document.head || document.documentElement;
+    if (el.parentNode !== parent || el.nextElementSibling) parent.appendChild(el);   // stay after the ladder's style
+  }
+  function loadCalm() {
+    try { chrome.storage.local.get("tabguardView", g => { CALM = (g && g.tabguardView) || { mode: "normal", except: [] }; calmRender(); }); } catch (_) {}
+  }
+  try { chrome.storage.onChanged.addListener((c, a) => { if (a === "local" && c.tabguardView) { CALM = c.tabguardView.newValue || { mode: "normal" }; calmRender(); } }); } catch (_) {}
+  loadCalm();
+
+  function applyLadder({ stage = "none", blurPx = 0, revealMs = 2000, value = 0, lang, fullBlur = false, disableLinks = false, allowReveal = true }) {
     currentStage = stage;
     if (lang !== undefined) stageLang = lang;
     const rMs = allowReveal ? revealMs : false; // false → no reveal button
@@ -237,7 +282,7 @@ function setHTML(el, html) {
   function doReveal() {
     revealUntil = Date.now() + 20000; // clear friction for 20s
     styleEl().textContent = "";
-    removeReveal();
+    removeReveal(); calmRender();
     if (revealTimer) clearTimeout(revealTimer);
     revealTimer = setTimeout(() => { safeSend({ type: "GET_STATUS" }, (s) => s && applyStage({ stage: s.stage })); }, 20000);
   }
@@ -1404,6 +1449,7 @@ function setHTML(el, html) {
     if (!r) return;
     // the imported list's search rules, for searches posted as a form
     if (r.imported) { const si = searchInfo(); if (si.page && si.query) safeSend({ type: "SEARCH_QUERY", q: si.query.slice(0, 300) }); }
+    if (r.bypass) bypassStart();
     if (!r.enabled) return;
     const lib = (typeof globalThis !== "undefined" ? globalThis : self).TGAdultSignals;
     if (lib && r.terms && r.terms.length) lib.setExtraTerms(r.terms);
@@ -1422,4 +1468,114 @@ function setHTML(el, html) {
       } catch (_) {}
     }
   });
+
+  // ---- guides for getting around blockers (YouTube) ---------------------------
+  // With the content filter on: results whose title or snippet is about
+  // unblocked games, proxy link drops or beating school filters are covered
+  // with a short note; such a video page gets a cover with an explanation; links
+  // in descriptions that lead to such sites are switched off.
+  let bpOn = false, bpCover = null, bpTr = null, bpLastUrl = "";
+  const BP_ITEMS = "ytd-video-renderer,ytd-rich-item-renderer,ytd-compact-video-renderer,ytd-grid-video-renderer,ytd-playlist-renderer,ytd-reel-item-renderer,yt-lockup-view-model,ytm-video-with-context-renderer,ytm-compact-video-renderer";
+  function bpLib() { return (typeof globalThis !== "undefined" ? globalThis : self).TGBypass; }
+  function bpT(k) { return bpTr ? bpTr(k) : ""; }
+  function bpLoadText(cb) {
+    if (bpTr) return cb();
+    const u = tgURL("assets/i18n.js"); if (!u) return;
+    tgImport(u).then(m => { bpTr = (k) => m.t(stageLang || tgLang, k); cb(); }).catch(() => {});
+  }
+  function bpItemText(el) {
+    const parts = [];
+    el.querySelectorAll("#video-title,#video-title-link,h3,.yt-lockup-metadata-view-model-wiz__title,.metadata-snippet-text,#description-text,.yt-core-attributed-string").forEach(n => {
+      parts.push(n.getAttribute && n.getAttribute("title") || "", n.textContent || "");
+    });
+    return parts.join(" ").slice(0, 1500);
+  }
+  function bpCoverItem(el) {
+    if (el.__tgBp) return;
+    el.__tgBp = true;
+    if (getComputedStyle(el).position === "static") el.style.position = "relative";
+    const c = document.createElement("div");
+    c.setAttribute("data-tabguard", "bypass");
+    c.style.cssText = "position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;text-align:center;padding:10px;"
+      + "background:var(--yt-spec-base-background,#0f0f0f);color:var(--yt-spec-text-secondary,#aaa);font:500 13px/1.4 Roboto,Arial,sans-serif;"
+      + "border:1px dashed rgba(128,128,128,.35);border-radius:12px;cursor:default";
+    c.textContent = "⃠ " + bpT("bp_hidden");
+    c.title = bpT("bp_why");
+    ["click", "mousedown", "pointerdown", "mouseover"].forEach(ev => c.addEventListener(ev, e => { e.stopPropagation(); if (ev === "click") e.preventDefault(); }, true));
+    el.appendChild(c);
+  }
+  function bpLinks(root, all) {
+    const lib = bpLib(); if (!lib) return 0;
+    let n = 0;
+    root.querySelectorAll('a[href*="/redirect?"],a[href^="http"]').forEach(a => {
+      const href = a.getAttribute("href") || "";
+      if (!lib.isBypassLink(href)) return;
+      if (!all && /script\.google\.com/.test(decodeURIComponent(href))) { n++; return; }   // Apps Script: only on a bypass video
+      n++;
+      if (a.__tgBp) return;
+      a.__tgBp = true;
+      a.removeAttribute("href");
+      a.style.textDecoration = "line-through"; a.style.opacity = ".55"; a.style.pointerEvents = "auto"; a.style.cursor = "not-allowed";
+      a.title = bpT("bp_link");
+      a.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); }, true);
+    });
+    return n;
+  }
+  function bpWatchCheck() {
+    const lib = bpLib(); if (!lib) return;
+    const onWatch = location.pathname === "/watch";
+    if (!onWatch) { bpUncover(); return; }
+    const title = (document.querySelector("ytd-watch-metadata h1, h1.ytd-watch-metadata, #title h1") || {}).textContent || document.title.replace(/ - YouTube$/, "");
+    const descEl = document.querySelector("ytd-watch-metadata #description, #description-inline-expander, ytd-text-inline-expander, #description");
+    const desc = descEl ? descEl.textContent || "" : "";
+    const links = descEl ? bpLinks(descEl, false) : 0;
+    const hit = lib.score(title) >= 2 || lib.score(title + " " + desc.slice(0, 4000)) >= 3 || links >= 3;
+    if (hit) { if (descEl) bpLinks(descEl, true); bpCoverPage(); } else bpUncover();
+  }
+  function bpCoverPage() {
+    document.querySelectorAll("video").forEach(v => { try { v.pause(); } catch (_) {} });
+    if (bpCover) return;
+    bpCover = document.createElement("div");
+    bpCover.style.cssText = "all:initial;position:fixed;inset:0;z-index:2147483647;";
+    document.documentElement.appendChild(bpCover);
+    const r = bpCover.attachShadow({ mode: "open" });
+    setHTML(r, `<style>.w{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+      background:rgba(10,12,18,.95);backdrop-filter:blur(8px);font:16px/1.5 system-ui,sans-serif;color:#e8ebf2}
+      .c{text-align:center;max-width:400px;padding:30px}h1{font-size:21px;margin:8px 0}p{color:#9aa3b6;margin:0 0 18px}
+      button{font:inherit;font-weight:650;padding:11px 18px;border:0;border-radius:11px;cursor:pointer;background:#1b2130;color:#cdd4e4}</style>
+      <div class="w"><div class="c"><div style="font-size:40px">🧭</div><h1 id="t"></h1><p id="x"></p><button id="back"></button></div></div>`);
+    r.getElementById("t").textContent = bpT("bp_title");
+    r.getElementById("x").textContent = bpT("bp_text");
+    r.getElementById("back").textContent = bpT("sf_back");
+    r.getElementById("back").addEventListener("click", () => history.length > 1 ? history.back() : (location.href = "/"));
+  }
+  function bpUncover() { if (bpCover) { bpCover.remove(); bpCover = null; } }
+  document.addEventListener("play", (e) => { if (bpCover && e.target instanceof HTMLMediaElement) { try { e.target.pause(); } catch (_) {} } }, true);
+  function bpScan() {
+    if (!bpOn) return;
+    const lib = bpLib(); if (!lib) return;
+    document.querySelectorAll(BP_ITEMS).forEach(el => {
+      if (el.__tgBp || el.querySelector('[data-tabguard="bypass"]')) return;
+      if (el.closest('[data-tabguard-bpitem]')) return;
+      if (lib.score(bpItemText(el)) >= 2) { const top = el.closest("ytd-rich-item-renderer") || el; top.setAttribute("data-tabguard-bpitem", ""); bpCoverItem(top); }
+    });
+    bpLinks(document, false);
+    bpWatchCheck();
+  }
+  function bypassStart() {
+    if (bpOn || !/(^|\.)youtube\.com$/.test(location.hostname)) return;
+    bpOn = true;
+    bpLoadText(() => {
+      bpScan();
+      let pend = false;
+      try {
+        new MutationObserver(() => {
+          if (pend) return;
+          pend = true; setTimeout(() => { pend = false; bpScan(); }, 600);
+        }).observe(document.documentElement, { childList: true, subtree: true });
+      } catch (_) {}
+      // YouTube changes pages without reloading
+      setInterval(() => { if (location.href !== bpLastUrl) { bpLastUrl = location.href; bpUncover(); setTimeout(bpScan, 900); } }, 700);
+    });
+  }
 })();

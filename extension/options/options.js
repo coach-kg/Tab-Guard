@@ -54,6 +54,7 @@ async function load() {
   $("adultSearch").checked = !(c.adultBlock && c.adultBlock.searchPause === false);
   $("adultGrey").checked = !(c.adultBlock && c.adultBlock.greyLinks === false);
   $("adultSafe").checked = !(c.adultBlock && c.adultBlock.safeSearch === false);
+  $("adultBypass").checked = !(c.adultBlock && c.adultBlock.bypass === false);
   $("adultTerms").value = ((c.adultBlock && c.adultBlock.terms) || []).join("\n");
   { const ex = { ...DEFAULTS.exits, ...(c.exits || {}) };
     $("exStart").value = String(+ex.startSeconds >= 10 ? 10 : 5);
@@ -120,7 +121,7 @@ async function save() {
   c.blocklist = lines($("blocklist").value);
   c.autoBlockOnLock = $("autoBlock").checked;
   c.adultBlock = { enabled: $("adult").checked, detect: $("adultDetect").checked, searchPause: $("adultSearch").checked,
-    greyLinks: $("adultGrey").checked, safeSearch: $("adultSafe").checked,
+    greyLinks: $("adultGrey").checked, safeSearch: $("adultSafe").checked, bypass: $("adultBypass").checked,
     terms: [...new Set($("adultTerms").value.split("\n").map(x => x.trim().toLowerCase()).filter(x => x.length >= 2))],
     extraHosts: lines($("adultLearned").value) };
   c.previews = { enabled: $("pvOn").checked, freezeGifs: $("pvGifs").checked, everywhere: $("pvAll").checked, hoverSwap: $("pvSwap").checked };
@@ -262,7 +263,7 @@ async function submitGate() {
 }
 
 // on/off state labels next to toggles
-const TOGGLES = ["sfPrePlay", "sfSwipe", "adultSafe", "pvSwap", "exOn", "exGrey", "adultSearch", "adultGrey", "pvOn", "pvGifs", "pvAll", "adultDetect", "proxyOn", "escOn", "dwellOn", "churnOn", "lnOn", "lockReset", "autoBlock", "adult", "intentOn", "srcOn", "sfOn", "sfPortrait", "sfBlockUrls", "fbAll", "fbLinks", "revealOn", "pgOn"];
+const TOGGLES = ["adultBypass", "sfPrePlay", "sfSwipe", "adultSafe", "pvSwap", "exOn", "exGrey", "adultSearch", "adultGrey", "pvOn", "pvGifs", "pvAll", "adultDetect", "proxyOn", "escOn", "dwellOn", "churnOn", "lnOn", "lockReset", "autoBlock", "adult", "intentOn", "srcOn", "sfOn", "sfPortrait", "sfBlockUrls", "fbAll", "fbLinks", "revealOn", "pgOn"];
 
 // ---- export / import --------------------------------------------------------
 async function exportSettings() {

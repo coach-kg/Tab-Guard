@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.32.0
+- **Calm view** in the popup: Normal · Grey · Blurred, for all sites, with "always normal on this site". Hovering a picture for a moment shows it. It is separate from the escalation ladder and applies at once.
+- **Guides for getting around blockers** (with the content filter on): on YouTube, results about unblocked games, proxy link drops or beating school filters are covered with a short note, such a video page gets a cover with an explanation, and description links to unblocker sites are switched off. Can be turned off in the settings (the change waits an hour, like other loosening).
+
 ## 1.31.2
 - Emergency access on a page that was blocked by the escalation ladder now lifts the block screen at once. Before, the page needed a manual reload.
 

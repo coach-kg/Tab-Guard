@@ -26,6 +26,7 @@ export const FIELDS = [
   ["adultBlock.searchPause", true, off],
   ["adultBlock.greyLinks", true, off],
   ["adultBlock.safeSearch", true, off],
+  ["adultBlock.bypass", true, off],
   ["exits.enabled", true, off],
   ["exits.budget", 5, (a, b) => budgetN(b) > budgetN(a)],
   ["exits.startSeconds", 5, (a, b) => +b < +a],
