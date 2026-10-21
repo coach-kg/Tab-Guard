@@ -1676,7 +1676,8 @@ setInterval(tgCheckGuards, 800);
     for (const f of document.querySelectorAll("iframe[src],frame[src],embed[src],object[data]")) {
       const src = f.getAttribute("src") || f.getAttribute("data") || "";
       let abs = src; try { abs = new URL(src, location.href).href; } catch (_) {}
-      if (lib.isProxyUrl(abs)) { s += 6; why.push("proxyFrame"); break; }
+      let same = false; try { same = new URL(abs).origin === location.origin; } catch (_) {}
+      if (lib.isProxyUrl(abs) || (same && lib.isFramedProxy(abs))) { s += 6; why.push("proxyFrame"); break; }
     }
     const root = document.documentElement;
     const isSvgDoc = root && root.namespaceURI === "http://www.w3.org/2000/svg";
@@ -1691,8 +1692,18 @@ setInterval(tgCheckGuards, 800);
     const ts = Math.min(4, lib.score(text) + (lib.score(title) >= 2 ? 1 : 0));
     if (ts) { s += ts; why.push("text" + ts); }
     if (lib.titleCloak(title, host)) { s += 2; why.push("cloak"); }
-    const bar = [...document.querySelectorAll("input")].some(i => /(search\s*(or|&)\s*(enter|type)|enter\s+(a\s+)?(url|website|site|address)|type\s+(a\s+)?(url|website|address)|search\s+or\s+(go|enter))/i.test(i.getAttribute("placeholder") || ""));
-    if (bar) { s += 2; why.push("urlBar"); }
+    const barInput = [...document.querySelectorAll("input")].find(i => lib.looksLikeUrlBar(i.getAttribute("placeholder") || ""));
+    if (barInput) {
+      s += 2; why.push("urlBar");
+      // back / forward / reload buttons next to it: a browser inside the page
+      let box = barInput; for (let k = 0; k < 4 && box.parentElement; k++) box = box.parentElement;
+      const nav = [...box.querySelectorAll("button,[role=button],a")].filter(b => {
+        const l = ((b.getAttribute("aria-label") || "") + " " + (b.getAttribute("title") || "")).toLowerCase();
+        const ic = [...b.querySelectorAll("i,svg,span")].map(x => (x.getAttribute("class") || "") + " " + (x.getAttribute("data-lucide") || "")).join(" ");
+        return /\b(back|forward|refresh|reload)\b/.test(l) || /(chevron|arrow)-(left|right)|rotate-(right|cw)|redo|refresh|reload/.test(ic);
+      }).length;
+      if (nav >= 2) { s += 2; why.push("navButtons"); }
+    }
     const L = new Set(labels);
     const nav = ["games", "movies", "proxy", "apps", "browser", "vms", "tv", "music"].filter(k => L.has(k)).length;
     if (L.has("games") && nav >= 2) { s += 2; why.push("menu"); }
@@ -1728,7 +1739,8 @@ setInterval(tgCheckGuards, 800);
             const lib = bpLib();
             for (const f of document.querySelectorAll("iframe[src],frame[src]")) {
               let abs = f.getAttribute("src"); try { abs = new URL(abs, location.href).href; } catch (_) {}
-              if (lib && lib.isProxyUrl(abs)) { bsSent = true; safeSend({ type: "BYPASS_SITE", url: location.href, why: ["proxyFrame"], score: 6 }); break; }
+              let same = false; try { same = new URL(abs).origin === location.origin; } catch (_) {}
+              if (lib && (lib.isProxyUrl(abs) || (same && lib.isFramedProxy(abs)))) { bsSent = true; safeSend({ type: "BYPASS_SITE", url: location.href, why: ["proxyFrame"], score: 6 }); break; }
             }
           }, 1200);
         })

@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.33.2
+- Proxy detection also catches disguised proxies: target addresses hidden Base64-coded in a same-site frame (e.g. `go=aHR0cHM6…`), websocket relays, address bars spelled with digits ("s3arc7 or u3l"), and back/forward/reload buttons next to such a bar.
+
 ## 1.33.1
 - YouTube: a covered video no longer flashes while the page loads. The cover stays for that video and is only lifted after moving on to a video whose own details are clean.
 

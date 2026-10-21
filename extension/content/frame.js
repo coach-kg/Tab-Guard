@@ -14,7 +14,8 @@
     lastHref = location.href;
     try {
       const B = globalThis.TGBypass;
-      if (B && B.isProxyUrl(location.href)) chrome.runtime.sendMessage({ type: "BYPASS_SITE" }, () => void chrome.runtime.lastError);
+      let same = false; try { same = window.top.location.origin === location.origin; } catch (_) {}
+      if (B && (B.isProxyUrl(location.href) || (same && B.isFramedProxy(location.href)))) chrome.runtime.sendMessage({ type: "BYPASS_SITE" }, () => void chrome.runtime.lastError);
     } catch (_) {}
   }
   proxyCheck();
