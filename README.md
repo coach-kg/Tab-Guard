@@ -67,6 +67,14 @@ You decide what is trusted, watched or blocked. Work, academic search and the st
 
 No account, no server, no analytics. Settings, lists and counters stay in your browser's local storage. The extension makes no network requests of its own. Details: [privacy policy](tab-guard-PRIVACY.md).
 
+## Touch Grass (optional, experimental)
+
+Tab Guard stands on its own. For people who also use [Touch Grass](https://github.com/coach-kg/touchgrass-mac), the blocker that unlocks once you have been outside, there is a hidden switch under **Settings → Experimental → Connect with Touch Grass**. With it, the Touch Grass Mac app can require Tab Guard in every browser and close browsers that run without it.
+
+Switching it on asks for the optional `nativeMessaging` permission. Tab Guard then tells the Mac app every few seconds that it is running, how many windows it sees and whether it may run in private windows. Nothing else, and nothing leaves the computer. Without the switch none of this code runs. Code: [`extension/src/touchGrass.js`](extension/src/touchGrass.js).
+
+Touch Grass: [for Mac](https://github.com/coach-kg/touchgrass-mac) · [for Android](https://github.com/coach-kg/TouchGrassBlocker)
+
 ## Install
 
 Store listings for the Chrome Web Store and Firefox Add-ons are on their way. Until then, or to run the latest code:
@@ -122,4 +130,4 @@ Changes are listed in the [changelog](CHANGELOG.md). Ideas and bug reports are w
 
 ## License
 
-[MIT](LICENSE). The bundled Atkinson Hyperlegible font is under the [SIL Open Font License](extension/assets/fonts/OFL.txt).
+[MIT](LICENSE), provided as is, without warranty. You use it at your own risk. Helplines, health and government sites are never blocked. The bundled Atkinson Hyperlegible font is under the [SIL Open Font License](extension/assets/fonts/OFL.txt).

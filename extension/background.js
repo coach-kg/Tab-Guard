@@ -17,6 +17,9 @@ import { IMPORT_KEY, IMPORT_NEXT_KEY, makeImportMatcher, parseImport } from "./s
 import "./src/bypass.js";                  // plain script: sets self.TGBypass
 import { applyDue } from "./src/loosen.js";
 import { isEssentialHost } from "./src/essential.js";
+// OPTIONAL, EXPERIMENTAL: Touch Grass link. Inert unless the user grants the
+// optional nativeMessaging permission in Settings → Experimental.
+import { startTouchGrassLink } from "./src/touchGrass.js";
 
 const scroll = new ScrollEngine();
 const sessions = new SessionEngine();
@@ -90,6 +93,8 @@ async function persist() {
     [PRESSURE_KEY]: pressure.snapshot(),
   });
 }
+
+startTouchGrassLink(() => !!(cfg && !cfg.enabled));
 
 chrome.runtime.onInstalled.addListener(ensureConfig);
 chrome.runtime.onStartup.addListener(ensureConfig);
