@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.34.1
+- No fixed `key` in the manifest any more: an unpacked copy keeps the extension id it already has, so updating from the folder works without reinstalling. Touch Grass learns the id through `tabguard_ids` in its config.
+
 ## 1.34.0
 - **Experimental, optional: Touch Grass link.** Hidden under Settings → Experimental. Lets the Touch Grass Mac app see that Tab Guard is running, so it can require Tab Guard in every browser. Asks for the optional `nativeMessaging` permission only when switched on; nothing is sent over the network.
 - The manifest carries a `key` so a copy loaded with “Load unpacked” always has the same id. The store packages leave it out.
