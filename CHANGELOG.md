@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.34.2
+- Touch Grass link: the settings show the browser's own reason when the connection fails (e.g. "Specified native messaging host not found").
+
 ## 1.34.1
 - No fixed `key` in the manifest any more: an unpacked copy keeps the extension id it already has, so updating from the folder works without reinstalling. Touch Grass learns the id through `tabguard_ids` in its config.
 

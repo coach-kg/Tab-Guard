@@ -478,7 +478,7 @@ async function tgRefresh() {
   let st = null;
   try { st = (await chrome.storage.session.get(TG_STATUS_KEY))[TG_STATUS_KEY]; } catch (_) {}
   const key = !granted ? "tg_st_off" : st?.state === "connected" ? "tg_st_ok" : "tg_st_missing";
-  $("tgLinkStatus").textContent = t(LANG, key);
+  $("tgLinkStatus").textContent = t(LANG, key) + (granted && st?.state !== "connected" && st?.error ? ` (${st.error})` : "");
   if (granted) $("expBox").open = true;
 }
 $("tgLink")?.addEventListener("change", (e) => {

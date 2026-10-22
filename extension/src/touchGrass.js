@@ -79,16 +79,17 @@ async function connect() {
   if (port) return;
   if (!(await permitted())) { setStatus("off"); return; }
   try { port = chrome.runtime.connectNative(HOST); }
-  catch (_) { port = null; setStatus("missing"); retryLater(); return; }
+  catch (e) { port = null; setStatus("missing", { error: String(e && e.message || e).slice(0, 200) }); retryLater(); return; }
   port.onMessage.addListener((m) => {
     if (m && m.t === "state") setStatus("connected", { macUnlocked: !!m.unlocked });
   });
   port.onDisconnect.addListener(() => {
-    void chrome.runtime.lastError;   // read it, or Chrome reports it as unchecked
+    // the browser's own reason ("host not found", "access forbidden", "exited")
+    const err = chrome.runtime.lastError ? String(chrome.runtime.lastError.message || "") : "";
     port = null;
     clearInterval(beatTimer);
     beatTimer = null;
-    setStatus("missing");            // Touch Grass not installed, or it closed
+    setStatus("missing", err ? { error: err.slice(0, 200) } : {});   // Touch Grass not installed, or it closed
     retryLater();
   });
   beat();
