@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.35.1
+- The hidden-decoy check reads page styles only when another sign already points to a proxy site. On normal sites a site's own broken font (e.g. "Failed to decode downloaded font") no longer shows up in the extension's error list.
+
 ## 1.35.0
 - **Proxy engines are recognised by their own traces**, whatever the site is called: the runtime files of Ultraviolet, Scramjet, Rammerhead and bare-mux, the original addresses that these engines keep on every element of a page they show (`__uv-attr-*`, `scramjet-attr-*`, `*-hammerhead-stored-value`), their storage (`bare-mux-path`, the `$scramjet` and `__op` databases) and Rammerhead's session addresses. Transports alone (epoxy, libcurl.js), which also have harmless uses, only add to the score.
 - Fewer false alarms: a frame of the same site only counts when it is actually shown and is handed another site's address that is not a plain image or file. Hidden login and helper frames are left alone, as is TestCafe on localhost.

@@ -1714,15 +1714,18 @@ setInterval(tgCheckGuards, 800);
     }
     // Hidden decoys: a whole harmless page kept invisible so filters read that
     // instead, or a fake Google Docs page ready to flash up ("boss key").
+    // Only looked for when something else already points that way: reading
+    // the styles makes the browser load the page's fonts, and a site's own
+    // broken font then shows up under Tab Guard's name.
     let decoy = false, boss = false;
-    for (const el of [...document.querySelectorAll("body > *")].slice(0, 80)) {
+    if (s >= 1) for (const el of [...document.querySelectorAll("body > *")].slice(0, 80)) {
       let hidden = false; try { const cs = getComputedStyle(el); hidden = cs.display === "none" || cs.visibility === "hidden"; } catch (_) {}
       if (!hidden && !el.hidden) continue;
       const txt = (el.textContent || "").replace(/\s+/g, " ");
       if (!decoy && txt.length > 400 && el.querySelector("h1,h2")) decoy = true;
       if (!boss && /untitled (document|spreadsheet|presentation)/i.test(txt) && /\bfile\b.*\bedit\b.*\bview\b.*\binsert\b/i.test(txt)) boss = true;
     }
-    if (!boss) { const bz = document.querySelector('[id*="boss" i],[class*="boss" i],[id*="panic" i],[class*="cloak" i]'); if (bz && /untitled|docs|classroom|drive/i.test(bz.textContent || "")) boss = true; }
+    if (!boss && s >= 1) { const bz = document.querySelector('[id*="boss" i],[class*="boss" i],[id*="panic" i],[class*="cloak" i]'); if (bz && /untitled|docs|classroom|drive/i.test(bz.textContent || "")) boss = true; }
     if (decoy) { s += 1; why.push("hiddenDecoy"); }
     if (boss) { s += 3; why.push("bossScreen"); }
     const L = new Set(labels);
