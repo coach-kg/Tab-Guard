@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.35.0
+- **Proxy engines are recognised by their own traces**, whatever the site is called: the runtime files of Ultraviolet, Scramjet, Rammerhead and bare-mux, the original addresses that these engines keep on every element of a page they show (`__uv-attr-*`, `scramjet-attr-*`, `*-hammerhead-stored-value`), their storage (`bare-mux-path`, the `$scramjet` and `__op` databases) and Rammerhead's session addresses. Transports alone (epoxy, libcurl.js), which also have harmless uses, only add to the score.
+- Fewer false alarms: a frame of the same site only counts when it is actually shown and is handed another site's address that is not a plain image or file. Hidden login and helper frames are left alone, as is TestCafe on localhost.
+
 ## 1.34.3
 - Escalation ladder and calm view now also reach pictures and videos inside embedded frames, e.g. the page a web proxy shows inside its own window. Removing the filter in the inspector brings it back.
 - Proxy detection: more proxy front ends are recognised (e.g. Kite, CroxyProxy with `__cpo` addresses, frames that load `…/cdn/https%3A…`), plus address bars like "Search the web or type a URL" and common proxy wording.

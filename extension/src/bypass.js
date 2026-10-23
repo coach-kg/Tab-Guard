@@ -89,6 +89,9 @@
     let u; try { u = new URL(href); } catch (_) { return false; }
     // CroxyProxy and its clones: ?__cpo=<Base64 of the real address>
     for (const k of ["__cpo", "__cpi"]) { const v = u.searchParams.get(k); if (v && /^(https?):\/\//i.test(b64(v))) return true; }
+    // Rammerhead: a 32-character session id, then the shuffled address
+    //   /3f9c…e1/_rhsQx7…   (unshuffled ones are caught by its files, see below)
+    if (/^\/[a-z0-9]{32}\/_rhs/i.test(u.pathname)) return true;
     const t = embeddedTarget(href);
     if (!t) return false;
     return /\/hvtrs8/i.test(u.pathname) || MARKER.test(u.pathname);
@@ -136,14 +139,24 @@
   // A frame of the same site that is handed another site's address (Base64-coded,
   // or a websocket relay): a proxy tab. Only for same-origin frames — ads and
   // embeds from other sites pass addresses around for harmless reasons.
+  // Not counted: addresses of the site itself (a login frame's return address)
+  // and plain files (an image or PDF fetched through an image CDN).
+  const FILE = /\.(jpe?g|png|gif|webp|avif|svg|ico|bmp|pdf|mp4|webm|mp3|woff2?|css|js)$/i;
+  function foreign(target, own) {
+    let t; try { t = new URL(target); } catch (_) { return false; }
+    const base = (h) => h.toLowerCase().replace(/^www\./, "").split(".").slice(-2).join(".");
+    if (base(t.hostname) === base(own.hostname)) return false;
+    return !(/^https?:$/.test(t.protocol) && FILE.test(t.pathname));
+  }
   function isFramedProxy(href) {
+    let u; try { u = new URL(href); } catch (_) { return false; }
     // a full address coded into the path (…/cdn/https%3A%2F%2Fsex.com%2F),
     // whatever the folder is called
-    if (embeddedTarget(href)) return true;
-    const t = paramTargets(href);
+    const e = embeddedTarget(href);
+    if (e && foreign(e, u)) return true;
+    const t = paramTargets(href).filter(x => foreign(x, u));
     if (!t.length) return false;
-    let u; try { u = new URL(href); } catch (_) { return false; }
-    const coded = [...u.searchParams.values()].some(v => /^[A-Za-z0-9+/_-]{8,}={0,2}$/.test(v) && /^(https?|wss?):\/\//i.test(b64(v)));
+    const coded = [...u.searchParams.values()].some(v => /^[A-Za-z0-9+/_-]{8,}={0,2}$/.test(v) && /^(https?|wss?):\/\//i.test(b64(v)) && foreign(b64(v), u));
     return coded || t.some(x => /^wss?:/i.test(x));
   }
   // "s3arc7 or u3l", "Search or enter website name", "Enter URL" …
@@ -159,5 +172,61 @@
     return false;
   }
 
-  self.TGBypass = { norm, score, isBypassLink, embeddedTarget, isProxyUrl, titleCloak, siteKey, paramTargets, isFramedProxy, looksLikeUrlBar };
+  // ---- proxy engines ----------------------------------------------------------
+  // Almost every unblocker is one of three open-source engines (Ultraviolet,
+  // Scramjet, Rammerhead) behind its own front page, talking to the web through
+  // bare-mux plus a transport (epoxy, libcurl, wisp). Each leaves traces that a
+  // normal site does not have, whatever the site is called:
+  //  - its runtime files (uv.bundle.js, scramjet.all.js, baremux/worker.js …),
+  //  - the original address kept on every rewritten element of a proxied page
+  //    (__uv-attr-src, scramjet-attr-href, src-hammerhead-stored-value),
+  //  - its storage (localStorage "bare-mux-path", IndexedDB "$scramjet" / "__op").
+  const ENGINE_FILES = /\/(uv\.(bundle|client|handler|config|sw)\.js|scramjet\.(all|bundle|sync|worker|client|codecs|controller|shared)\.m?js|scramjet\.wasm(\.wasm)?|baremux\/(index|worker)\.m?js|bare-mux[^/]*\.m?js|rammerhead(\.min)?\.js|worker-hammerhead\.js)([?#]|$)/i;
+  const TRANSPORT_FILES = /\/(epoxy\/index\.m?js|epoxy[-_.][^/]*\.(m?js|wasm)|libcurl\/index\.m?js|libcurl(_full)?\.(m?js|wasm)|wisp-client[^/]*\.m?js)([?#]|$)/i;
+  const UV_SJ_ATTRS = ["src", "href", "srcset", "action", "data", "poster", "integrity", "script-source-src"]
+    .flatMap(a => ["__uv-attr-" + a, "scramjet-attr-" + a]).map(a => "[" + a + "]").join(",");
+  const HH_ATTRS = '[src-hammerhead-stored-value],[href-hammerhead-stored-value],[action-hammerhead-stored-value],[class*="hammerhead-shadow-ui"]';
+  // TestCafe (the testing tool Rammerhead is built on) runs on the developer's
+  // own machine; those pages are left alone.
+  const LOCAL = /^(localhost|127(\.\d+){3}|\[::1\]|.*\.localhost|.*\.test)$/i;
+  function fileHits(urls) {
+    const engine = new Set(), transport = new Set();
+    for (const raw of urls) {
+      let p = ""; try { p = new URL(raw, "https://x.invalid/").pathname; } catch (_) { continue; }
+      let m = p.match(ENGINE_FILES); if (m) engine.add(m[1].toLowerCase());
+      m = p.match(TRANSPORT_FILES); if (m) transport.add(m[1].toLowerCase());
+    }
+    return { engine: [...engine], transport: [...transport] };
+  }
+  // What a page (or frame) shows of a proxy engine. Synchronous and cheap.
+  function engineMarks(doc, win) {
+    doc = doc || document; win = win || self;
+    const host = (win.location && win.location.hostname) || "";
+    const urls = [...doc.querySelectorAll("script[src],link[href]")].map(e => e.getAttribute("src") || e.getAttribute("href"));
+    try { for (const r of win.performance.getEntriesByType("resource")) urls.push(r.name); } catch (_) {}
+    try { const c = win.navigator.serviceWorker && win.navigator.serviceWorker.controller; if (c) urls.push(c.scriptURL); } catch (_) {}
+    const f = fileHits(urls);
+    let rewritten = false;
+    try { rewritten = !!doc.querySelector(UV_SJ_ATTRS) || (!LOCAL.test(host) && !!doc.querySelector(HH_ATTRS)); } catch (_) {}
+    let store = false;
+    try {
+      const ls = win.localStorage;
+      for (let i = 0; i < ls.length && i < 500; i++) {
+        const k = ls.key(i) || "";
+        if (k === "bare-mux-path" || k === "bare-mux-remote" || k === "rammerhead_synctimestamp" || k.startsWith("rammerhead|storage-wrapper|")) { store = true; break; }
+      }
+    } catch (_) {}
+    if (LOCAL.test(host)) f.engine = f.engine.filter(x => !/hammerhead/.test(x));
+    return { engine: f.engine, transport: f.transport, rewritten, store };
+  }
+  // The engines' own databases. Asynchronous; resolves to true or false.
+  function engineDatabases(win) {
+    win = win || self;
+    try {
+      if (!win.indexedDB || !win.indexedDB.databases) return Promise.resolve(false);
+      return win.indexedDB.databases().then(list => list.some(d => d && (d.name === "$scramjet" || d.name === "__op")), () => false);
+    } catch (_) { return Promise.resolve(false); }
+  }
+
+  self.TGBypass = { norm, score, isBypassLink, embeddedTarget, isProxyUrl, titleCloak, siteKey, paramTargets, isFramedProxy, looksLikeUrlBar, engineMarks, engineDatabases, fileHits };
 })();
