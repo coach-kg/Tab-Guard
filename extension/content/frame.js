@@ -72,4 +72,53 @@
     chrome.storage.local.get("tabguardConfig", g => apply(g.tabguardConfig));
     chrome.storage.onChanged.addListener((c, a) => { if (a === "local" && c.tabguardConfig) apply(c.tabguardConfig.newValue); });
   } catch (_) {}
+
+  // ---- escalation ladder and calm view inside frames --------------------------
+  // The top page shows the block screen and the reveal button; inside a frame
+  // only the pictures change, the same way as on the page around it. Without
+  // this, a page shown inside a frame (a web proxy, a video widget) kept its
+  // colours while the rest went grey.
+  const MEDIA = 'img,video,canvas,picture,[style*="background-image"],[style*="url("]';
+  const CALM_MEDIA = 'img,video,picture,[style*="background-image"]';
+  let stage = "none", blurPx = 0, calm = { mode: "normal", except: [] };
+  function topHost() {
+    try { return window.top.location.hostname.replace(/^www\./, ""); } catch (_) {}
+    try { const a = location.ancestorOrigins; if (a && a.length) return new URL(a[a.length - 1]).hostname.replace(/^www\./, ""); } catch (_) {}
+    return location.hostname.replace(/^www\./, "");
+  }
+  function css() {
+    const grey = stage === "grey", blur = stage === "blur" || stage === "block";
+    const h = topHost();
+    const cm = (!calm || (calm.except || []).some(d => h === d || h.endsWith("." + d))) ? "normal" : (calm.mode || "normal");
+    if (grey || blur) {
+      const px = blur ? Math.max(blurPx || 0, stage === "block" ? 8 : 3) : (cm === "blur" ? 12 : 0);
+      return `${MEDIA}{filter:grayscale(1)${px ? ` blur(${px}px)` : ""}!important;transition:filter .4s}`;
+    }
+    if (cm === "grey") return `${CALM_MEDIA}{filter:grayscale(1)!important;transition:filter .3s}`;
+    if (cm === "blur") return `${CALM_MEDIA}{filter:blur(12px) grayscale(.35)!important;transition:filter .15s}`
+      + `img:hover,video:hover,picture:hover img,a:hover img,a:hover video,:is(div,span,figure,button):hover>:is(img,video,picture){filter:none!important;transition:filter .25s .6s!important}`;
+    return "";
+  }
+  const STYLE_ID = "__tabguard_frame__";
+  function render() {
+    const c = css();
+    let el = document.getElementById(STYLE_ID);
+    if (!c) { if (el) el.remove(); return; }
+    if (!el) { el = document.createElement("style"); el.id = STYLE_ID; }
+    if (el.textContent !== c) el.textContent = c;
+    const parent = document.head || document.documentElement;
+    if (!el.isConnected || el.nextElementSibling) parent.appendChild(el);   // last, and back if removed
+  }
+  try {
+    chrome.runtime.onMessage.addListener((msg) => {
+      if (msg && msg.type === "APPLY_STAGE") { stage = msg.stage || "none"; blurPx = msg.blurPx || 0; render(); }
+    });
+    chrome.runtime.sendMessage({ type: "GET_STATUS" }, (st) => {
+      void chrome.runtime.lastError;
+      if (st && st.watched && st.stage) { stage = st.stage; render(); }
+    });
+    chrome.storage.local.get("tabguardView", g => { calm = (g && g.tabguardView) || calm; render(); });
+    chrome.storage.onChanged.addListener((c, a) => { if (a === "local" && c.tabguardView) { calm = c.tabguardView.newValue || { mode: "normal" }; render(); } });
+  } catch (_) {}
+  setInterval(render, 1000);
 })();

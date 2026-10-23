@@ -1703,7 +1703,26 @@ setInterval(tgCheckGuards, 800);
         return /\b(back|forward|refresh|reload)\b/.test(l) || /(chevron|arrow)-(left|right)|rotate-(right|cw)|redo|refresh|reload/.test(ic);
       }).length;
       if (nav >= 2) { s += 2; why.push("navButtons"); }
+      // a tab strip with a "new tab" button: a whole browser inside the page
+      const newTab = [...document.querySelectorAll("button,[role=button],a,div")].slice(0, 600).some(b => {
+        const l = ((b.getAttribute("title") || "") + " " + (b.getAttribute("aria-label") || "") + " " + (b.id || "")).toLowerCase();
+        return /\bnew ?tab\b|^newtab$|\bnewtab\b/.test(l.trim());
+      });
+      if (newTab) { s += 2; why.push("tabStrip"); }
     }
+    // Hidden decoys: a whole harmless page kept invisible so filters read that
+    // instead, or a fake Google Docs page ready to flash up ("boss key").
+    let decoy = false, boss = false;
+    for (const el of [...document.querySelectorAll("body > *")].slice(0, 80)) {
+      let hidden = false; try { const cs = getComputedStyle(el); hidden = cs.display === "none" || cs.visibility === "hidden"; } catch (_) {}
+      if (!hidden && !el.hidden) continue;
+      const txt = (el.textContent || "").replace(/\s+/g, " ");
+      if (!decoy && txt.length > 400 && el.querySelector("h1,h2")) decoy = true;
+      if (!boss && /untitled (document|spreadsheet|presentation)/i.test(txt) && /\bfile\b.*\bedit\b.*\bview\b.*\binsert\b/i.test(txt)) boss = true;
+    }
+    if (!boss) { const bz = document.querySelector('[id*="boss" i],[class*="boss" i],[id*="panic" i],[class*="cloak" i]'); if (bz && /untitled|docs|classroom|drive/i.test(bz.textContent || "")) boss = true; }
+    if (decoy) { s += 1; why.push("hiddenDecoy"); }
+    if (boss) { s += 3; why.push("bossScreen"); }
     const L = new Set(labels);
     const nav = ["games", "movies", "proxy", "apps", "browser", "vms", "tv", "music"].filter(k => L.has(k)).length;
     if (L.has("games") && nav >= 2) { s += 2; why.push("menu"); }
