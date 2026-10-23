@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.34.3
+- Escalation ladder and calm view now also reach pictures and videos inside embedded frames, e.g. the page a web proxy shows inside its own window. Removing the filter in the inspector brings it back.
+- Proxy detection: more proxy front ends are recognised (e.g. Kite, CroxyProxy with `__cpo` addresses, frames that load `…/cdn/https%3A…`), plus address bars like "Search the web or type a URL" and common proxy wording.
+
 ## 1.34.2
 - Touch Grass link: the settings show the browser's own reason when the connection fails (e.g. "Specified native messaging host not found").
 

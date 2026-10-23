@@ -17,7 +17,7 @@
   const CONTEXT = /\b(school|schools|chromebooks?|chroebooks?|classroom|class|k12|teacher|links?|sites?|websites?|games?|gaming|roblox|discord|instagram|snapchat|tiktok|movies)\b/;
   const FILTERS = /\b(goguardian|securly|lightspeed|blocksi|iboss|linewize|contentkeeper|gaggle|hapara|deledao|fortiguard|umbrella|smoothwall|netsweeper|relay)\b/;
   const VERBS = /\b(bypass|bypassing|unblock|unblocking|get around|turn off|remove|disable|kill|hack|break|escape|delete)\b/;
-  const NAMES = /\b(interstellar|melonsoda|melon soda|gn ?math|doge unblocker|holy unblocker|ultraviolet|rammerhead|scramjet|petezah|truffled|selenite|bull ?ee|space links|cherri|nebula proxy|womginx|achroma|zaka|catclass|yuki os|edurocks|voltix|polaris|ghost proxy)\b/;
+  const NAMES = /\b(interstellar|melonsoda|melon soda|gn ?math|doge unblocker|holy unblocker|ultraviolet|rammerhead|scramjet|petezah|truffled|selenite|bull ?ee|space links|cherri|nebula proxy|womginx|achroma|zaka|catclass|yuki os|edurocks|voltix|polaris|ghost proxy|kite|cherri|tung ?tung|croxy ?proxy|proxyium|blockaway|frogie|froggie)\b/;
 
   // A score: 2 or more means "this is about getting around blockers".
   function score(text) {
@@ -29,7 +29,8 @@
     if (/\bprox(y|ies)\b/.test(t) && /\b(school|chromebooks?|links?|unbl?ock\w*|games?)\b/.test(t)) s += 2;
     if (FILTERS.test(t) && VERBS.test(t)) s += 2;
     if (NAMES.test(t) && /\b(links?|proxy|proxies|unbl?ock\w*|school|games?|new)\b/.test(t)) s += 2;
-    if (/\b(tab ?cloak|about:blank cloak|cloaked tab|panic key)\b/.test(t)) s += 2;
+    if (/\b(tab ?cloak|about:blank cloak|cloaked tab|panic key|cloaking|boss key)\b/.test(t)) s += 2;
+    if (/\b(free )?web proxy\b|\bproxy (server|site|service|browser)\b|\b(browse|surf)(ing)? (the web )?anonymous(ly)?\b|\bunblock (any )?(websites?|sites)\b/.test(t)) s += 2;
     if (/\bschool chromebooks?\b/.test(t) && /\b(games?|gaming|roblox|links?|movies)\b/.test(t)) s += 2;
     if (/\bgames? (websites?|sites?|links?) for school\b/.test(t)) s += 1;
     return s;
@@ -85,9 +86,11 @@
   // A proxy's own page: an embedded address behind a typical proxy folder
   // (or Ultraviolet's coding, which is unmistakable).
   function isProxyUrl(href) {
+    let u; try { u = new URL(href); } catch (_) { return false; }
+    // CroxyProxy and its clones: ?__cpo=<Base64 of the real address>
+    for (const k of ["__cpo", "__cpi"]) { const v = u.searchParams.get(k); if (v && /^(https?):\/\//i.test(b64(v))) return true; }
     const t = embeddedTarget(href);
     if (!t) return false;
-    let u; try { u = new URL(href); } catch (_) { return false; }
     return /\/hvtrs8/i.test(u.pathname) || MARKER.test(u.pathname);
   }
   // Pages pretending to be a school tool in the tab title.
@@ -134,6 +137,9 @@
   // or a websocket relay): a proxy tab. Only for same-origin frames — ads and
   // embeds from other sites pass addresses around for harmless reasons.
   function isFramedProxy(href) {
+    // a full address coded into the path (…/cdn/https%3A%2F%2Fsex.com%2F),
+    // whatever the folder is called
+    if (embeddedTarget(href)) return true;
     const t = paramTargets(href);
     if (!t.length) return false;
     let u; try { u = new URL(href); } catch (_) { return false; }
@@ -143,7 +149,8 @@
   // "s3arc7 or u3l", "Search or enter website name", "Enter URL" …
   // Digits and symbols in the placeholder count as wildcards.
   const BAR = ["search or url", "search or enter url", "search or type a url", "search or type url", "search or enter website name",
-    "search or enter address", "search or enter a url", "search the web or enter url", "search or enter website", "enter url", "enter a url", "type a url", "search or go to url"];
+    "search or enter address", "search or enter a url", "search the web or enter url", "search or enter website", "enter url", "enter a url", "type a url", "search or go to url", "search the web or type a url",
+    "enter the url", "enter the address", "enter address", "enter website", "enter a website", "type url", "paste a url", "url or search"];
   function looksLikeUrlBar(ph) {
     const t = String(ph || "").toLowerCase().replace(/\s+/g, " ").trim();
     if (!t || t.length > 60) return false;
