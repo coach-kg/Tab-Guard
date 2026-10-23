@@ -1667,7 +1667,9 @@ setInterval(tgCheckGuards, 800);
   // be Classroom or IXL, a browser-style address bar, a Games / Movies / Proxy
   // menu, a web app hidden as an .svg file on a code CDN — plus the words.
   // A found site is closed and remembered (by its project path on shared hosts).
-  let bsSent = false;
+  let bsSent = false, bsDb = false, bsDbAsked = false;
+  // a frame that is actually shown (hidden login or tracking frames are tiny)
+  function bsShown(f) { try { const r = f.getBoundingClientRect(); return r.width >= 200 && r.height >= 150; } catch (_) { return false; } }
   function bsFeatures() {
     const lib = bpLib(); if (!lib) return null;
     const host = location.hostname, why = [];
@@ -1677,7 +1679,7 @@ setInterval(tgCheckGuards, 800);
       const src = f.getAttribute("src") || f.getAttribute("data") || "";
       let abs = src; try { abs = new URL(src, location.href).href; } catch (_) {}
       let same = false; try { same = new URL(abs).origin === location.origin; } catch (_) {}
-      if (lib.isProxyUrl(abs) || (same && lib.isFramedProxy(abs))) { s += 6; why.push("proxyFrame"); break; }
+      if (lib.isProxyUrl(abs) || (same && lib.isFramedProxy(abs) && bsShown(f))) { s += 6; why.push("proxyFrame"); break; }
     }
     const root = document.documentElement;
     const isSvgDoc = root && root.namespaceURI === "http://www.w3.org/2000/svg";
@@ -1730,11 +1732,21 @@ setInterval(tgCheckGuards, 800);
       const sw = navigator.serviceWorker && navigator.serviceWorker.controller;
       if (sw && /\/(uv|scram|scramjet|sj|bare|wisp|epoxy|proxy)[^/]*\.js|\b(uv\.sw|scramjet)/i.test(sw.scriptURL)) { s += 3; why.push("proxySW"); }
     } catch (_) {}
+    // the proxy engine itself: its files, rewritten elements or storage
+    if (lib.engineMarks) {
+      const e = lib.engineMarks(document, window);
+      if (e.engine.length) { s += 6; why.push("engine:" + e.engine[0]); }
+      if (e.rewritten) { s += 6; why.push("rewritten"); }
+      if (e.store) { s += 6; why.push("engineStore"); }
+      if (e.transport.length) { s += 3; why.push("transport:" + e.transport[0]); }
+    }
+    if (bsDb) { s += 6; why.push("engineDb"); }
     return { score: s, why };
   }
   function bypassSiteCheck() {
     if (bsSent || !bpOn) return;
     const f = bsFeatures(); if (!f) return;
+    if (!bsDbAsked) { bsDbAsked = true; const lib = bpLib(); if (lib && lib.engineDatabases) lib.engineDatabases(window).then(y => { if (y) { bsDb = true; bypassSiteCheck(); } }); }
     if (f.score >= 5) { bsSent = true; safeSend({ type: "BYPASS_SITE", url: location.href, why: f.why, score: f.score }); }
   }
   function bypassStart() {
@@ -1756,10 +1768,11 @@ setInterval(tgCheckGuards, 800);
             pend = false;
             if (Date.now() - t0 < 60000) return bypassSiteCheck();
             const lib = bpLib();
+            if (lib && lib.engineMarks) { const e = lib.engineMarks(document, window); if (e.engine.length || e.rewritten || e.store) return bypassSiteCheck(); }
             for (const f of document.querySelectorAll("iframe[src],frame[src]")) {
               let abs = f.getAttribute("src"); try { abs = new URL(abs, location.href).href; } catch (_) {}
               let same = false; try { same = new URL(abs).origin === location.origin; } catch (_) {}
-              if (lib && (lib.isProxyUrl(abs) || (same && lib.isFramedProxy(abs)))) { bsSent = true; safeSend({ type: "BYPASS_SITE", url: location.href, why: ["proxyFrame"], score: 6 }); break; }
+              if (lib && (lib.isProxyUrl(abs) || (same && lib.isFramedProxy(abs) && bsShown(f)))) { bsSent = true; safeSend({ type: "BYPASS_SITE", url: location.href, why: ["proxyFrame"], score: 6 }); break; }
             }
           }, 1200);
         })

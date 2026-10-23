@@ -8,18 +8,39 @@
   // A page shown through a web proxy (the real address is coded into this
   // frame's own): the whole tab is an unblocker site. The background decides
   // (content filter on, not a trusted site) and closes it.
-  let lastHref = "";
+  let lastHref = "", framedHref = "";
+  // hidden helper frames (logins, tracking) are tiny; a proxy shows a page
+  const shown = () => window.innerWidth >= 200 && window.innerHeight >= 150;
   function proxyCheck() {
-    if (location.href === lastHref) return;
-    lastHref = location.href;
     try {
-      const B = globalThis.TGBypass;
-      let same = false; try { same = window.top.location.origin === location.origin; } catch (_) {}
-      if (B && (B.isProxyUrl(location.href) || (same && B.isFramedProxy(location.href)))) chrome.runtime.sendMessage({ type: "BYPASS_SITE" }, () => void chrome.runtime.lastError);
+      const B = globalThis.TGBypass; if (!B) return;
+      if (location.href !== lastHref) {
+        lastHref = location.href;
+        if (B.isProxyUrl(location.href)) return report();
+        let same = false; try { same = window.top.location.origin === location.origin; } catch (_) {}
+        framedHref = same && B.isFramedProxy(location.href) ? location.href : "";
+      }
+      if (framedHref && framedHref === location.href && shown()) report();
+    } catch (_) {}
+  }
+  let reported = false;
+  function report() { if (reported) return; reported = true; chrome.runtime.sendMessage({ type: "BYPASS_SITE" }, () => void chrome.runtime.lastError); }
+  // A page shown by a proxy engine carries its marks: rewritten elements that
+  // keep the original address (__uv-attr-src, scramjet-attr-href …), the
+  // engine's files or its storage — whatever this frame's address looks like.
+  let engineLooks = 0;
+  function engineCheck() {
+    if (reported || engineLooks > 40) return;
+    engineLooks++;
+    try {
+      const B = globalThis.TGBypass; if (!B || !B.engineMarks) return;
+      const e = B.engineMarks(document, window);
+      if (e.engine.length || e.rewritten || e.store) report();
+      if (engineLooks === 1 && B.engineDatabases) B.engineDatabases(window).then(y => { if (y) report(); });
     } catch (_) {}
   }
   proxyCheck();
-  setInterval(proxyCheck, 1500);
+  setInterval(() => { proxyCheck(); engineCheck(); }, 1500);
   let SF = null;
   const touched = new Set();
   const lib = () => globalThis.TGShortForm;
