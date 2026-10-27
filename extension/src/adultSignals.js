@@ -12,6 +12,7 @@
 // or too weak to block on its own, so only a combination reaches the threshold.
 (function (root) {
   "use strict";
+  if (root.TGAdultSignals) return;   // loaded once per frame, even when listed twice
 
   const THRESHOLD = 6;
 

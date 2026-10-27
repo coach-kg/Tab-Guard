@@ -17,7 +17,7 @@
   const CONTEXT = /\b(school|schools|chromebooks?|chroebooks?|classroom|class|k12|teacher|links?|sites?|websites?|games?|gaming|roblox|discord|instagram|snapchat|tiktok|movies)\b/;
   const FILTERS = /\b(goguardian|securly|lightspeed|blocksi|iboss|linewize|contentkeeper|gaggle|hapara|deledao|fortiguard|umbrella|smoothwall|netsweeper|relay)\b/;
   const VERBS = /\b(bypass|bypassing|unblock|unblocking|get around|turn off|remove|disable|kill|hack|break|escape|delete)\b/;
-  const NAMES = /\b(interstellar|melonsoda|melon soda|gn ?math|doge unblocker|holy unblocker|ultraviolet|rammerhead|scramjet|petezah|truffled|selenite|bull ?ee|space links|cherri|nebula proxy|womginx|achroma|zaka|catclass|yuki os|edurocks|voltix|polaris|ghost proxy|kite|cherri|tung ?tung|croxy ?proxy|proxyium|blockaway|frogie|froggie)\b/;
+  const NAMES = /\b(interstellar|melonsoda|melon soda|gn ?math|doge unblocker|doge|holy unblocker|ultraviolet|rammerhead|scramjet|petezah|truffled|selenite|bull ?ee|space links|space|cherri|nebula|womginx|achroma|zaka|catclass|yuki os|edurocks|voltix|polaris|ghost|kite|tung ?tung|croxy ?proxy|proxyium|blockaway|frogie|froggie|utopia|quasar|lunar|daydream ?x|glint|galaxy|vapor|sheep|shadow|emerald|radon|rainbow|velara|artclass|hypertabs|dynamic|corrosion|alloy)\b/;
 
   // A score: 2 or more means "this is about getting around blockers".
   function score(text) {
@@ -28,7 +28,7 @@
     else if (/\bunbl?ock(ed|er|ers)\b/.test(t)) s += 1;
     if (/\bprox(y|ies)\b/.test(t) && /\b(school|chromebooks?|links?|unbl?ock\w*|games?)\b/.test(t)) s += 2;
     if (FILTERS.test(t) && VERBS.test(t)) s += 2;
-    if (NAMES.test(t) && /\b(links?|proxy|proxies|unbl?ock\w*|school|games?|new)\b/.test(t)) s += 2;
+    if (NAMES.test(t) && /\b(links?|proxy|proxies|unbl?ock\w*|chromebooks?|school)\b/.test(t) && /\b(proxy|proxies|unbl?ock\w*|browser)\b/.test(t)) s += 2;
     if (/\b(tab ?cloak|about:blank cloak|cloaked tab|panic key|cloaking|boss key)\b/.test(t)) s += 2;
     if (/\b(free )?web proxy\b|\bproxy (server|site|service|browser)\b|\b(browse|surf)(ing)? (the web )?anonymous(ly)?\b|\bunblock (any )?(websites?|sites)\b/.test(t)) s += 2;
     if (/\bschool chromebooks?\b/.test(t) && /\b(games?|gaming|roblox|links?|movies)\b/.test(t)) s += 2;
@@ -92,6 +92,9 @@
     // Rammerhead: a 32-character session id, then the shuffled address
     //   /3f9c…e1/_rhsQx7…   (unshuffled ones are caught by its files, see below)
     if (/^\/[a-z0-9]{32}\/_rhs/i.test(u.pathname)) return true;
+    // Alloy: /fetch/<Base64 of the real origin>/…
+    const al = u.pathname.match(/^\/(fetch|prefix)\/([A-Za-z0-9+/_-]{8,}={0,2})\//);
+    if (al && /^https?:\/\/[^/]+\.[a-z]/i.test(b64(al[2]))) return true;
     const t = embeddedTarget(href);
     if (!t) return false;
     return /\/hvtrs8/i.test(u.pathname) || MARKER.test(u.pathname);
@@ -181,10 +184,10 @@
   //  - the original address kept on every rewritten element of a proxied page
   //    (__uv-attr-src, scramjet-attr-href, src-hammerhead-stored-value),
   //  - its storage (localStorage "bare-mux-path", IndexedDB "$scramjet" / "__op").
-  const ENGINE_FILES = /\/(uv\.(bundle|client|handler|config|sw)\.js|scramjet\.(all|bundle|sync|worker|client|codecs|controller|shared)\.m?js|scramjet\.wasm(\.wasm)?|baremux\/(index|worker)\.m?js|bare-mux[^/]*\.m?js|rammerhead(\.min)?\.js|worker-hammerhead\.js)([?#]|$)/i;
+  const ENGINE_FILES = /\/(uv\.(bundle|client|handler|config|sw)\.js|scramjet\.(all|bundle|sync|worker|client|codecs|controller|shared)\.m?js|scramjet\.wasm(\.wasm)?|baremux\/(index|worker)\.m?js|bare-mux[^/]*\.m?js|rammerhead(\.min)?\.js|worker-hammerhead\.js|dynamic\.(handler|client|worker|config|html)\.js|unblocker-client\.js)([?#]|$)/i;
   const TRANSPORT_FILES = /\/(epoxy\/index\.m?js|epoxy[-_.][^/]*\.(m?js|wasm)|libcurl\/index\.m?js|libcurl(_full)?\.(m?js|wasm)|wisp-client[^/]*\.m?js)([?#]|$)/i;
   const UV_SJ_ATTRS = ["src", "href", "srcset", "action", "data", "poster", "integrity", "script-source-src"]
-    .flatMap(a => ["__uv-attr-" + a, "scramjet-attr-" + a]).map(a => "[" + a + "]").join(",");
+    .flatMap(a => ["__uv-attr-" + a, "scramjet-attr-" + a, "data-dynamic_" + a]).map(a => "[" + a + "]").join(",");
   const HH_ATTRS = '[src-hammerhead-stored-value],[href-hammerhead-stored-value],[action-hammerhead-stored-value],[class*="hammerhead-shadow-ui"]';
   // TestCafe (the testing tool Rammerhead is built on) runs on the developer's
   // own machine; those pages are left alone.
@@ -207,7 +210,7 @@
     try { const c = win.navigator.serviceWorker && win.navigator.serviceWorker.controller; if (c) urls.push(c.scriptURL); } catch (_) {}
     const f = fileHits(urls);
     let rewritten = false;
-    try { rewritten = !!doc.querySelector(UV_SJ_ATTRS) || (!LOCAL.test(host) && !!doc.querySelector(HH_ATTRS)); } catch (_) {}
+    try { rewritten = !!doc.querySelector(UV_SJ_ATTRS + ",#_alloy_data") || (!LOCAL.test(host) && !!doc.querySelector(HH_ATTRS)); } catch (_) {}
     let store = false;
     try {
       const ls = win.localStorage;

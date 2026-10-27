@@ -36,8 +36,9 @@ export const FIELDS = [
   ["lateNight.end", "05:00", (a, b) => toMin(b) < toMin(a)],   // your day start: earlier = a fresh day sooner
 ];
 export const LISTS = ["blocklist", "adultBlock.extraHosts", "adultBlock.terms", "adultBlock.bypassSites"];
-// lists where ADDING loosens protection (sites that may never be blocked)
-export const ADD_LISTS = ["essentialExtra"];
+// lists where ADDING loosens protection (sites that may never be blocked, and
+// trusted / academic / streaming sites, which skip the friction)
+export const ADD_LISTS = ["essentialExtra", "allowlist", "academicSearch", "streamingHosts"];
 
 const get = (o, path) => path.split(".").reduce((x, k) => (x == null ? undefined : x[k]), o);
 function set(o, path, v) {

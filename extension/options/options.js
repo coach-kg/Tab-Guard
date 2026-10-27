@@ -103,6 +103,36 @@ async function load() {
 }
 
 const lines = (v) => v.split("\n").map(s => s.trim().toLowerCase().replace(/^www\./, "")).filter(Boolean);
+// ---- sorting the lists ---------------------------------------------------------
+// A–Z / Z–A only change what you see. What is saved keeps the order you
+// entered things in (new lines go to the end), so "as entered" can always be
+// shown again. Nothing extra is stored.
+const LIST_ORDER = {};
+function keepOrder(id, list) {
+  const orig = LIST_ORDER[id]; if (!orig) return list;
+  const pos = new Map(orig.map((x, i) => [x, i]));
+  const known = list.filter(x => pos.has(x)).sort((a, b) => pos.get(a) - pos.get(b));
+  return [...new Set([...known, ...list.filter(x => !pos.has(x))])];
+}
+const ordered = (id) => keepOrder(id, lines($(id).value));
+function sortBar(id) {
+  const ta = $(id); if (!ta || ta.previousElementSibling?.classList?.contains("sortbar")) return;
+  const bar = document.createElement("div"); bar.className = "sortbar";
+  bar.style.cssText = "display:flex;gap:6px;justify-content:flex-end;margin:6px 0 -2px";
+  const raw = (v) => v.split("\n").map(x => x.trim()).filter(Boolean);
+  for (const [k, fn] of [["o_sort_entered", null], ["o_sort_az", (a, b) => a.localeCompare(b)], ["o_sort_za", (a, b) => b.localeCompare(a)]]) {
+    const b = document.createElement("button"); b.type = "button"; b.className = "mini-btn"; b.setAttribute("data-i18n", k);
+    b.textContent = t(LANG, k);
+    b.addEventListener("click", () => {
+      const cur = raw(ta.value);
+      if (!LIST_ORDER[id]) LIST_ORDER[id] = lines(ta.value);
+      ta.value = (fn ? [...cur].sort(fn) : keepOrder(id, cur.map(x => x.toLowerCase().replace(/^www\./, "")))).join("\n");
+      bar.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    });
+    bar.appendChild(b);
+  }
+  ta.parentNode.insertBefore(bar, ta);
+}
 
 let editingUnlocked = false;
 
@@ -116,26 +146,26 @@ async function save() {
     lock.unlocksUsed = (lock.unlocksUsed || 0) + 1;
     c.lock = lock;
   }
-  c.allowlist = lines($("allowlist").value);
-  c.academicSearch = lines($("academic").value);
+  c.allowlist = ordered("allowlist");
+  c.academicSearch = ordered("academic");
   c.academicProxies = $("proxyOn").checked;
-  c.blocklist = lines($("blocklist").value);
+  c.blocklist = ordered("blocklist");
   c.autoBlockOnLock = $("autoBlock").checked;
   c.adultBlock = { enabled: $("adult").checked, detect: $("adultDetect").checked, searchPause: $("adultSearch").checked,
     greyLinks: $("adultGrey").checked, safeSearch: $("adultSafe").checked, bypass: $("adultBypass").checked,
-    terms: [...new Set($("adultTerms").value.split("\n").map(x => x.trim().toLowerCase()).filter(x => x.length >= 2))],
-    extraHosts: lines($("adultLearned").value), bypassSites: lines($("bypassSites").value) };
+    terms: keepOrder("adultTerms", [...new Set($("adultTerms").value.split("\n").map(x => x.trim().toLowerCase()).filter(x => x.length >= 2))]),
+    extraHosts: ordered("adultLearned"), bypassSites: ordered("bypassSites") };
   c.previews = { enabled: $("pvOn").checked, freezeGifs: $("pvGifs").checked, everywhere: $("pvAll").checked, hoverSwap: $("pvSwap").checked };
   c.exits = { enabled: $("exOn").checked, budget: Math.max(0, Math.min(99, Math.round(+$("exBudget").value || 0))),
     startSeconds: +$("exStart").value >= 10 ? 10 : 5,
     maxSeconds: +$("exMax").value || 120, resetMode: $("exReset").value === "full" ? "full" : "halve", notOnGrey: $("exGrey").checked };
-  c.essentialExtra = lines($("essentialExtra").value);
-  c.streamingHosts = lines($("streaming").value);
-  c.fullBlurHosts = lines($("fullBlur").value);
+  c.essentialExtra = ordered("essentialExtra");
+  c.streamingHosts = ordered("streaming");
+  c.fullBlurHosts = ordered("fullBlur");
   c.fullBlurAll = $("fbAll").checked; c.fullBlurDisableLinks = $("fbLinks").checked;
   c.shortForm = { enabled: $("sfOn").checked, action: $("sfAction").value, minSeconds: +$("sfMin").value || 0, portrait: $("sfPortrait").checked, blockShortsUrls: $("sfBlockUrls").checked,
     prePlay: $("sfPrePlay").checked, swipeFeeds: $("sfSwipe").checked };
-  c.pagination = { enabled: $("pgOn").checked, pageSize: Math.max(1, +$("pgSize").value || 10), delaySeconds: Math.max(0, +$("pgDelay").value || 0), hosts: lines($("pgHosts").value) };
+  c.pagination = { enabled: $("pgOn").checked, pageSize: Math.max(1, +$("pgSize").value || 10), delaySeconds: Math.max(0, +$("pgDelay").value || 0), hosts: ordered("pgHosts") };
   c.redirects = $("redirects").value.split("\n").map(l => {
     const m = l.split(/\s*(?:⇒|=>|->|>)\s*/); if (m.length < 2) return null;
     const from = m[0].trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
@@ -340,10 +370,12 @@ $("gateSubmit")?.addEventListener("click", submitGate);
 $("gatePass")?.addEventListener("keydown", (e) => { if (e.key === "Enter") submitGate(); });
 if (window.TGLock) window.TGLock.hardenInput($("gatePass"));
 
+for (const id of ["allowlist", "academic", "blocklist", "adultLearned", "bypassSites", "adultTerms", "essentialExtra", "streaming", "fullBlur", "pgHosts"]) sortBar(id);
+
 // ---- loosening waits an hour: notes under the affected sections -------------
 function renderPending(c) {
   const fmt = (at) => new Date(at).toLocaleTimeString(resolve(LANG), { hour: "2-digit", minute: "2-digit" });
-  for (const [id, paths] of [["exPending", ["exits", "lateNight"]], ["adultPending", ["adultBlock"]], ["blockPending", ["blocklist"]], ["essPending", ["essentialExtra"]]]) {
+  for (const [id, paths] of [["exPending", ["exits", "lateNight"]], ["adultPending", ["adultBlock"]], ["blockPending", ["blocklist"]], ["essPending", ["essentialExtra"]], ["allowPending", ["allowlist"]], ["academicPending", ["academicSearch"]], ["streamPending", ["streamingHosts"]]]) {
     const el = $(id); if (!el) continue;
     const at = pendingAt(c, paths);
     el.textContent = at ? t(LANG, "o_ex_pending", { t: fmt(at) }) : "";
