@@ -1577,7 +1577,7 @@ setInterval(tgCheckGuards, 800);
     ["click", "mousedown", "pointerdown", "mouseover"].forEach(ev => c.addEventListener(ev, e => { e.stopPropagation(); if (ev === "click") e.preventDefault(); }, true));
     el.appendChild(c);
   }
-  function bpLinks(root, all) {
+  function bpLinks(root, all, dry) {
     const lib = bpLib(); if (!lib) return 0;
     let n = 0;
     root.querySelectorAll('a[href*="/redirect?"],a[href^="http"]').forEach(a => {
@@ -1585,7 +1585,7 @@ setInterval(tgCheckGuards, 800);
       if (!lib.isBypassLink(href)) return;
       if (!all && /script\.google\.com/.test(decodeURIComponent(href))) { n++; return; }   // Apps Script: only on a bypass video
       n++;
-      if (a.__tgBp) return;
+      if (dry || a.__tgBp) return;
       a.__tgBp = true;
       a.removeAttribute("href");
       a.style.textDecoration = "line-through"; a.style.opacity = ".55"; a.style.pointerEvents = "auto"; a.style.cursor = "not-allowed";
@@ -1620,14 +1620,17 @@ setInterval(tgCheckGuards, 800);
     if (++bpClean < 2) return;
     bpUncover(); bpCoveredFor = null; bpClean = 0;
   }
-  function bpCoverPage() {
+  const BP_UNDER_YT = "#movie_player,video{visibility:hidden!important}ytd-watch-metadata #description,#description-inline-expander,ytd-text-inline-expander,#description,#comments{display:none!important}";
+  let bpUnder = BP_UNDER_YT;
+  function bpCoverPage(under) {
+    if (under) bpUnder = under;
     document.querySelectorAll("video").forEach(v => { try { v.pause(); } catch (_) {} });
     if (bpCover) return;
     bpCover = document.createElement("div");
     tgCoverStyle(bpCover, 2147483647);
     // underneath, too: no picture, no description, no links — so removing the
     // cover in the inspector leaves nothing to use
-    tgUnderStyle("bp", "#movie_player,video{visibility:hidden!important}ytd-watch-metadata #description,#description-inline-expander,ytd-text-inline-expander,#description,#comments{display:none!important}");
+    tgUnderStyle("bp", bpUnder);
     document.documentElement.appendChild(bpCover);
     const r = bpCover.attachShadow({ mode: "open" });
     setHTML(r, `<style>.w{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
@@ -1661,13 +1664,67 @@ setInterval(tgCheckGuards, 800);
     bpLinks(document, false);
     bpWatchCheck();
   }
+  // ---- guides on other sites ------------------------------------------------------
+  // The same videos and link drops turn up outside YouTube: front ends and
+  // mirrors (Invidious, Piped …), other video sites, blog posts that are just a
+  // list of unblocker links. A page counts as such a guide when
+  //  - it is a video page whose title (or title and description) is about it,
+  //  - or it links to three or more typical unblocker hosts,
+  //  - or its words are about it and it is mostly a list of bare addresses.
+  // Articles about the topic (news, IT how-tos) have neither, and stay open.
+  const GUIDE_UNDER = "body{visibility:hidden!important}video,iframe{display:none!important}";
+  const BP_CARDS = '.pure-u-1,.pure-u-md-1-4,.h-box,article,li,[class*="card"],[class*="item"],[class*="video"],[class*="thumb"]';
+  function guideMeta(sel) { const m = document.querySelector(sel); return m ? m.getAttribute("content") || "" : ""; }
+  function guideLinkDrops() {
+    const own = location.hostname.replace(/^www\./, ""), hosts = new Set();
+    for (const a of [...document.querySelectorAll("a[href]")].slice(0, 2000)) {
+      let u; try { u = new URL(a.getAttribute("href"), location.href); } catch (_) { continue; }
+      const h = u.hostname.replace(/^www\./, "");
+      if (!/^https?:$/.test(u.protocol) || !h || h === own || h.endsWith("." + own)) continue;
+      const txt = (a.textContent || "").trim().toLowerCase();
+      // shown as the address itself (or nearly), as link lists do
+      if (txt && (txt.includes(h) || /^https?:\/\//.test(txt) || /^[a-z0-9-]+(\.[a-z0-9-]+)+(\/\S*)?$/.test(txt))) hosts.add(h);
+    }
+    return hosts.size;
+  }
+  function guideCheck() {
+    const lib = bpLib(); if (!lib || bpCover) return;
+    const title = (guideMeta('meta[property="og:title"]') || (document.querySelector("h1") || {}).textContent || document.title || "").trim();
+    const desc = [guideMeta('meta[name="description"]'), guideMeta('meta[property="og:description"]')].join(" ").slice(0, 4000);
+    const ogType = guideMeta('meta[property="og:type"]');
+    const video = /^video/i.test(ogType) || !!document.querySelector('video, .video-js, #player, iframe[src*="/embed/"]');
+    const tScore = Math.max(lib.score(title), lib.score(document.title));
+    const links = bpLinks(document, false, true);
+    let hit = false;
+    if (video && (tScore >= 2 || lib.score(title + " " + desc) >= 3)) hit = true;
+    else if (links >= 3) hit = true;
+    else if (lib.score([title, desc, ...[...document.querySelectorAll("h1,h2,h3")].slice(0, 12).map(h => h.textContent)].join(" \n ")) >= 2 && guideLinkDrops() >= 6) hit = true;
+    if (hit) { bpLinks(document, true); bpCoverPage(GUIDE_UNDER); return; }
+    // result lists of video front ends: cover the single entries
+    document.querySelectorAll('a[href*="watch?v="],a[href*="/watch/"],a[href*="/video/"],a[href*="/videos/"],a[href^="/v/"]').forEach(a => {
+      const card = a.closest(BP_CARDS) || a.parentElement; if (!card || card === document.body) return;
+      if (card.__tgBp || card.closest("[data-tabguard-bpitem]")) return;
+      const img = card.querySelector("img[alt]");
+      const t = [a.textContent, a.getAttribute("title"), img && img.getAttribute("alt")].join(" ");
+      if (lib.score(t) >= 2) { card.setAttribute("data-tabguard-bpitem", ""); bpCoverItem(card); }
+    });
+  }
+  function guideScan() {
+    if (!bpOn) return;
+    document.querySelectorAll("[data-tabguard-bpitem]").forEach(el => {
+      const c = el.querySelector(':scope > [data-tabguard="bypass"]');
+      if (!c || tgCoverGone(c)) { if (c) c.remove(); el.__tgBp = false; bpCoverItem(el); }
+    });
+    guideCheck();
+  }
+
   // ---- proxy and unblocker sites ----------------------------------------------
   // Recognised by what they are built like: a page hidden inside another
   // (the real address coded into the frame's path), a tab title pretending to
   // be Classroom or IXL, a browser-style address bar, a Games / Movies / Proxy
   // menu, a web app hidden as an .svg file on a code CDN — plus the words.
   // A found site is closed and remembered (by its project path on shared hosts).
-  let bsSent = false, bsDb = false, bsDbAsked = false;
+  let bsSent = false, bsDb = false, bsDbAsked = 0, bsBig = 0, bsLastFull = 0;
   // a frame that is actually shown (hidden login or tracking frames are tiny)
   function bsShown(f) { try { const r = f.getBoundingClientRect(); return r.width >= 200 && r.height >= 150; } catch (_) { return false; } }
   function bsFeatures() {
@@ -1729,8 +1786,20 @@ setInterval(tgCheckGuards, 800);
     if (decoy) { s += 1; why.push("hiddenDecoy"); }
     if (boss) { s += 3; why.push("bossScreen"); }
     const L = new Set(labels);
-    const nav = ["games", "movies", "proxy", "apps", "browser", "vms", "tv", "music"].filter(k => L.has(k)).length;
-    if (L.has("games") && nav >= 2) { s += 2; why.push("menu"); }
+    const nav = ["games", "movies", "proxy", "apps", "browser", "browse", "vms", "tv", "music", "watch", "listen", "chat", "ai", "play"].filter(k => L.has(k)).length;
+    if ((L.has("games") || L.has("play")) && nav >= 3) { s += 2; why.push("menu"); }
+    // An iframe shell: the whole site is one frame, and the menu only swaps
+    // which local page it shows (data-src="play.html", "uu.html" …).
+    const swaps = [...document.querySelectorAll("[data-src],[data-page],[data-url],[data-href],[data-frame]")].slice(0, 200)
+      .map(e => e.getAttribute("data-src") || e.getAttribute("data-page") || e.getAttribute("data-url") || e.getAttribute("data-href") || e.getAttribute("data-frame") || "")
+      .filter(v => /^(\.?\/)?[\w-]+(\.html?)?([?#].*)?$/i.test(v) && !/^\d+$/.test(v));
+    const swapSet = new Set(swaps.map(v => v.replace(/^\.?\//, "")));
+    const shell = swapSet.size >= 4 && [...document.querySelectorAll("iframe[src]")].some(f => swapSet.has((f.getAttribute("src") || "").replace(/^\.?\//, "")));
+    if (shell) {
+      s += 3; why.push("iframeShell");
+      // …dressed up as a school tool
+      if (/\b(practice|study|studies|learning|homework|classroom|tutoring|k-?12|worksheets?|math|portal|academy|school)\b/i.test(title)) { s += 2; why.push("schoolCloak"); }
+    }
     try {
       const sw = navigator.serviceWorker && navigator.serviceWorker.controller;
       if (sw && /\/(uv|scram|scramjet|sj|bare|wisp|epoxy|proxy)[^/]*\.js|\b(uv\.sw|scramjet)/i.test(sw.scriptURL)) { s += 3; why.push("proxySW"); }
@@ -1749,8 +1818,12 @@ setInterval(tgCheckGuards, 800);
   function bypassSiteCheck() {
     if (bsSent || !bpOn) return;
     const f = bsFeatures(); if (!f) return;
-    if (!bsDbAsked) { bsDbAsked = true; const lib = bpLib(); if (lib && lib.engineDatabases) lib.engineDatabases(window).then(y => { if (y) { bsDb = true; bypassSiteCheck(); } }); }
-    if (f.score >= 5) { bsSent = true; safeSend({ type: "BYPASS_SITE", url: location.href, why: f.why, score: f.score }); }
+    if (bsDbAsked < 6 && !bsDb) { bsDbAsked++; const lib = bpLib(); if (lib && lib.engineDatabases) lib.engineDatabases(window).then(y => { if (y && !bsDb) { bsDb = true; bypassSiteCheck(); } }); }
+    if (f.score >= 5) {
+      bsSent = true;
+      const strong = f.why.some(w => /^(proxyUrl|proxyFrame|engine:|rewritten|engineStore|engineDb)/.test(w));
+      safeSend({ type: "BYPASS_SITE", url: location.href, why: f.why, score: f.score, strong });
+    }
   }
   function bypassStart() {
     if (bpOn) return;
@@ -1764,23 +1837,35 @@ setInterval(tgCheckGuards, 800);
         // the full look runs during the first minute; after that only new
         // frames are checked (a proxy opens its pages in one), which is cheap
         const t0 = Date.now();
-        new MutationObserver(() => {
+        new MutationObserver((recs) => {
+          for (const r of recs) bsBig += r.addedNodes.length;
           if (pend || bsSent) return;
           pend = true;
           setTimeout(() => {
             pend = false;
             if (Date.now() - t0 < 60000) return bypassSiteCheck();
+            // later: when the page was largely rebuilt (another page loaded into
+            // it), the full look once more, at most every 10 seconds
+            if (bsBig >= 150 && Date.now() - bsLastFull > 10000) { bsBig = 0; bsLastFull = Date.now(); return bypassSiteCheck(); }
             const lib = bpLib();
             if (lib && lib.engineMarks) { const e = lib.engineMarks(document, window); if (e.engine.length || e.rewritten || e.store) return bypassSiteCheck(); }
             for (const f of document.querySelectorAll("iframe[src],frame[src]")) {
               let abs = f.getAttribute("src"); try { abs = new URL(abs, location.href).href; } catch (_) {}
               let same = false; try { same = new URL(abs).origin === location.origin; } catch (_) {}
-              if (lib && (lib.isProxyUrl(abs) || (same && lib.isFramedProxy(abs) && bsShown(f)))) { bsSent = true; safeSend({ type: "BYPASS_SITE", url: location.href, why: ["proxyFrame"], score: 6 }); break; }
+              if (lib && (lib.isProxyUrl(abs) || (same && lib.isFramedProxy(abs) && bsShown(f)))) { bsSent = true; safeSend({ type: "BYPASS_SITE", url: location.href, why: ["proxyFrame"], score: 6, strong: true }); break; }
             }
           }, 1200);
         })
           .observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["src"] });
       } catch (_) {}
+      bpLoadText(() => {
+        guideScan();
+        let gp = false;
+        try {
+          new MutationObserver(() => { if (gp) return; gp = true; setTimeout(() => { gp = false; guideScan(); }, 900); })
+            .observe(document.body || document.documentElement, { childList: true, subtree: true });
+        } catch (_) {}
+      });
       return;
     }
     bpLoadText(() => {

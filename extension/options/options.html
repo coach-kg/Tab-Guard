@@ -148,12 +148,14 @@
     <h2><span class="ic">✅</span> <span data-i18n="o_h_trusted">trusted sites</span></h2>
     <p class="note" data-i18n="o_n_trusted">One host per line.</p>
     <textarea id="allowlist" spellcheck="false"></textarea>
+    <p class="note" id="allowPending" style="display:none;color:var(--warn);margin:4px 0 0"></p>
   </section>
 
   <section id="s_o_h_academic">
     <h2><span class="ic">🎓</span> <span data-i18n="o_h_academic">academic search</span></h2>
     <p class="note" data-i18n="o_n_academic">Treated as trusted research.</p>
     <textarea id="academic" spellcheck="false"></textarea>
+    <p class="note" id="academicPending" style="display:none;color:var(--warn);margin:4px 0 0"></p>
     <div class="field"><label data-i18n="o_l_proxies">University library proxies count as academic search</label><span class="in"><span class="state" id="proxyOnS">on</span><label class="sw"><input type="checkbox" id="proxyOn" checked><span></span></label></span></div>
     <p class="note" data-i18n="o_n_proxies">Any address with ezproxy. or libproxy. in it.</p>
   </section>
@@ -316,6 +318,7 @@
     <h2><span class="ic">🎬</span> <span data-i18n="o_h_streaming">streaming</span></h2>
     <p class="note" data-i18n="o_n_streaming">Sites you watch on purpose — trusted, never greyscaled.</p>
     <textarea id="streaming" spellcheck="false"></textarea>
+    <p class="note" id="streamPending" style="display:none;color:var(--warn);margin:4px 0 0"></p>
   </section>
 
   <section id="s_o_h_latenight">

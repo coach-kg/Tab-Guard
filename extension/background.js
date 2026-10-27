@@ -47,8 +47,11 @@ function buildMatchers(c) {
 let mBypass = null;
 function bypassOn() { const ab = cfg && cfg.adultBlock || {}; return !!ab.enabled && ab.bypass !== false; }
 // A known unblocker site, or an address that is itself a proxy page.
+// Your own trusted lists do not open a remembered proxy: only the sites that
+// are never blocked (help, health, government) stay exempt. Otherwise one line
+// in the allow list would undo the whole content filter.
 function bypassBlocked(host, url) {
-  if (!bypassOn() || !host || trusted(host) || isSystemUrl(url)) return false;
+  if (!bypassOn() || !host || essential(host) || isSystemUrl(url)) return false;
   try { if (mBypass && mBypass(url)) return true; } catch (_) {}
   const B = self.TGBypass;
   return !!(B && B.isProxyUrl(url));
@@ -307,6 +310,7 @@ const safeRewrites = new Map();          // tabId -> { n, at } SafeSearch correc
 
 async function countNewTab(tabId, url) {
   const host = hostFromUrl(url);
+  if (host && bypassBlocked(host, url)) return redirectToCooldown(tabId, host, "proxy", url);
   if (!host || !watched(host, url)) return;
   const now = Date.now();
 
@@ -362,7 +366,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, info, tab) => {
   if (isWatched && (info.status === "loading" || info.url) && !onCooldownPage && importBlocked(host, tab.url)) {
     return redirectToCooldown(tabId, host, "import", tab.url);
   }
-  if (isWatched && (info.status === "loading" || info.url) && !onCooldownPage && bypassBlocked(host, tab.url)) {
+  if ((info.status === "loading" || info.url) && !onCooldownPage && bypassBlocked(host, tab.url)) {
     return redirectToCooldown(tabId, host, "proxy", tab.url);
   }
   if (isWatched && info.status === "loading" && !onCooldownPage) {
@@ -707,21 +711,38 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         // links say and decide. A detected site is remembered, so next time it
         // is closed before it loads.
         const ab = cfg.adultBlock || {};
-        if (!ab.enabled || tabId == null || !host || trusted(host)) return sendResponse({});
+        if (!ab.enabled || tabId == null || !host || essential(host)) return sendResponse({});
+        // trusted sites: only an adult page shown inside one of their frames counts
+        if (trusted(host) && !msg.frame) return sendResponse({});
         const f = { ...(msg.features || {}) };
         f.adultOutbound = (f.hosts || []).filter(h => isAdultHost(h, ab.extraHosts)).length;
         const lib = globalThis.TGAdultSignals;
         const r = lib ? lib.score(f) : { adult: !!f.rta, why: [] };
         const adult = ab.detect === false ? !!f.rta : r.adult;   // detection off → only the RTA label
-        if (adult) { await rememberAdultHost(host); redirectToCooldown(tabId, host, "adult"); }
+        if (adult && msg.frame && bypassOn()) {
+          // an adult page shown inside a frame of this site (a proxy's window):
+          // the site is a way around the filter, closed without emergency access
+          await rememberBypassSite(url || "");
+          redirectToCooldown(tabId, host, "proxy");
+        } else if (adult) { await rememberAdultHost(host); redirectToCooldown(tabId, host, "adult"); }
         return sendResponse({ adult, score: r.score, why: r.why });
+      }
+      case "I18N": {
+        // short texts for the small frame script, in the chosen language
+        const out = {};
+        for (const k of (Array.isArray(msg.keys) ? msg.keys : []).slice(0, 10)) if (/^[a-z]{1,4}_\w{1,30}$/.test(k)) out[k] = i18nT(cfg.language, k);
+        return sendResponse(out);
       }
       case "BYPASS_SITE": {
         // the page looks like a proxy / unblocker site (content script) — or a
         // frame inside it is showing a page through a proxy (frame script)
         const tabUrl = (sender.tab && sender.tab.url) || msg.url || "";
         const th = hostFromUrl(tabUrl);
-        if (!bypassOn() || tabId == null || !th || trusted(th) || isSystemUrl(tabUrl)) return sendResponse({});
+        // On trusted sites only the unmistakable signs count (the proxy engine
+        // itself, a proxied address, a page shown through a frame); the softer
+        // ones (words, menus, look) don't. Help and health sites never.
+        if (!bypassOn() || tabId == null || !th || essential(th) || isSystemUrl(tabUrl)) return sendResponse({});
+        if (trusted(th) && !msg.strong) return sendResponse({});
         await rememberBypassSite(tabUrl);
         redirectToCooldown(tabId, th, "proxy");
         return sendResponse({ blocked: true });

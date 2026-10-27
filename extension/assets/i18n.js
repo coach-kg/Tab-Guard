@@ -819,6 +819,11 @@ Object.assign(de, {"cd_proxyTitle": "Ein Weg um Sperren herum", "cd_reasonProxy"
 Object.assign(fr, {"cd_proxyTitle": "Un moyen de contourner les blocages", "cd_reasonProxy": "Ce site est un proxy ou une page de jeux débloqués : il affiche d’autres sites en passant les filtres. Tant que le filtre de contenu est actif, il reste fermé.", "o_l_adultBypass": "Bloquer les sites proxy et de jeux débloqués, et masquer les guides qui y mènent (YouTube)", "o_n_bypassSites": "Sites proxy et de déblocage reconnus, un par ligne (sur les hôtes partagés, avec le chemin du projet). Une suppression s’applique au bout d’une heure."});
 Object.assign(es, {"cd_proxyTitle": "Una forma de saltarse bloqueos", "cd_reasonProxy": "Este sitio es un proxy o una página de juegos desbloqueados: muestra otros sitios saltándose los filtros. Mientras el filtro de contenido esté activo, sigue cerrado.", "o_l_adultBypass": "Bloquear sitios proxy y de juegos desbloqueados, y ocultar guías hacia ellos (YouTube)", "o_n_bypassSites": "Sitios proxy y de desbloqueo reconocidos, uno por línea (en hosts compartidos, con la ruta del proyecto). Quitar uno surte efecto tras una hora."});
 Object.assign(ro, {"cd_proxyTitle": "O cale de ocolire a blocărilor", "cd_reasonProxy": "Acest site este un proxy sau o pagină de jocuri deblocate: arată alte site-uri trecând de filtre. Cât timp filtrul de conținut este pornit, rămâne închis.", "o_l_adultBypass": "Blochează site-urile proxy și de jocuri deblocate și ascunde ghidurile spre ele (YouTube)", "o_n_bypassSites": "Site-uri proxy și de deblocare recunoscute, câte unul pe linie (pe gazde comune, cu calea proiectului). Eliminarea se aplică după o oră."});
+Object.assign(en, {"o_sort_entered": "as entered", "o_sort_az": "A–Z", "o_sort_za": "Z–A"});
+Object.assign(de, {"o_sort_entered": "wie eingegeben", "o_sort_az": "A–Z", "o_sort_za": "Z–A"});
+Object.assign(fr, {"o_sort_entered": "ordre de saisie", "o_sort_az": "A–Z", "o_sort_za": "Z–A"});
+Object.assign(es, {"o_sort_entered": "orden de entrada", "o_sort_az": "A–Z", "o_sort_za": "Z–A"});
+Object.assign(ro, {"o_sort_entered": "ordinea introducerii", "o_sort_az": "A–Z", "o_sort_za": "Z–A"});
 export const MESSAGES = { en, de, fr, es, ro };
 export const SUPPORTED = ["en", "de", "fr", "es", "ro"];
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.36.0
+- **Frames within frames.** Content filter and proxy checks now also run in frames written by script (`about:blank`, `document.write`) and in frames inside frames. An adult page shown inside a site's own frame closes the site as a proxy (no emergency access). A browser inside a frame (address bar with back / forward / reload) is recognised too.
+- **Iframe shells**: sites whose menu only swaps local pages in one big frame (`data-src="play.html"`, `"uu.html"` …), especially under a school-tool title such as "Student Practice Center", are recognised.
+- **Guides outside YouTube**: YouTube front ends and mirrors (Invidious, Piped …), other video sites and blog posts that are mostly a list of unblocker addresses are covered like guide videos on YouTube; single guide entries in result lists are covered. Embedded YouTube players whose title is such a guide are covered in place; other embeds play.
+- More engines recognised by their traces: Dynamic (`data-dynamic_*`, `dynamic.*.js`), node-unblocker (`unblocker-client.js`), Alloy (`/fetch/<Base64 origin>/`). More front-end names; names only count together with proxy / unblock words (no more hiding "Interstellar" trailers).
+- **Late recognition**: when a page or a frame is largely rebuilt later (another site loaded into it), it is checked again. Engine databases are asked several times, not only once.
+- **Trusted lists no longer open proxies.** A remembered proxy stays closed even if its site is on the trusted list; on trusted sites the unmistakable signs (engine, proxied address, page shown through a frame) still count. Adding sites to the trusted, academic or streaming lists now waits an hour, like every other loosening.
+- Settings: lists can be shown A–Z, Z–A or in the order entered. Sorting only changes the view; the saved order stays the order you entered things in.
+
 ## 1.35.1
 - The hidden-decoy check reads page styles only when another sign already points to a proxy site. On normal sites a site's own broken font (e.g. "Failed to decode downloaded font") no longer shows up in the extension's error list.
 
