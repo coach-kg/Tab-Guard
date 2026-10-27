@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Cooldown</title>
-<style>
+<style>h1,h2,h3,h4{text-wrap:balance}p,li,label,.note,.small{text-wrap:pretty}
   body { margin: 0; height: 100vh; display: flex; align-items: center; justify-content: center;
     font: 16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;
     background: radial-gradient(1200px 600px at 50% -10%, #1a2233, #0b0e15); color: #e8ebf2; }
@@ -14,6 +14,7 @@
   .host { color: #c4b5fd; font-weight: 600; }
   .timer { font-size: 40px; font-weight: 700; font-variant-numeric: tabular-nums; margin: 18px 0 6px; }
   .small { font-size: 12.5px; color: #5b6478; }
+  .nudge { font-weight: 650; color: #cdd4e4; font-size: 15px; }
   a { color: #6f9dff; text-decoration: none; }
   .go{display:inline-block;margin:6px 0 18px;padding:12px 22px;border-radius:999px;background:#3b82f6;color:#fff;
     font-weight:600;text-decoration:none;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -35,7 +36,7 @@
     <div class="timer" id="timer">—</div>
     <a class="go" id="go" href="#" style="display:none"></a>
     <p class="small" id="reason"></p>
-    <p class="small" data-t="cd_small">Do the thing you actually opened the browser for. This tab will let you leave whenever — the site just won't load yet.</p>
+    <p class="nudge" id="nudge"></p>
     <div id="em"></div>
   </div>
   <script src="cooldown.js" type="module"></script>
