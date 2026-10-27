@@ -282,7 +282,7 @@ setInterval(tgCheckGuards, 800);
     document.documentElement.appendChild(revealHost);
     const root = revealHost.attachShadow({ mode: "open" });
     setHTML(root, `
-      <style>
+      <style>h1,h2,h3,h4{text-wrap:balance}p,li,label,.note,.small{text-wrap:pretty}
         .b{position:relative;overflow:hidden;font:600 12.5px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;
           color:#cdd4e4;background:#12151f;border:1px solid #2a3042;border-radius:10px;padding:9px 13px;
           cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.35);user-select:none;}
@@ -356,7 +356,7 @@ setInterval(tgCheckGuards, 800);
     document.documentElement.appendChild(blockHost);
     const root = blockHost.attachShadow({ mode: "open" });
     setHTML(root, `
-      <style>
+      <style>h1,h2,h3,h4{text-wrap:balance}p,li,label,.note,.small{text-wrap:pretty}
         .w{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(10,12,18,.9);backdrop-filter:blur(6px);}
         .c{text-align:center;color:#e8ebf2;font:16px/1.6 system-ui,sans-serif;max-width:400px;padding:32px;}
         h1{font-size:22px;margin:0 0 8px;} p{color:#9aa3b6;margin:0 0 18px;}
@@ -396,7 +396,7 @@ setInterval(tgCheckGuards, 800);
       const u = tgURL("assets/i18n.js"); if (!u) return;
       tgImport(u).then(m => {
         const tr = (k, v) => m.t(stageLang || tgLang, k, v);
-        setHTML(box, `<style>.eml{display:inline-block;margin-top:22px;font-size:12.5px;color:#6a7284;text-decoration:underline;cursor:pointer;background:none;border:0;padding:0}
+        setHTML(box, `<style>h1,h2,h3,h4{text-wrap:balance}p,li,label,.note,.small{text-wrap:pretty}.eml{display:inline-block;margin-top:22px;font-size:12.5px;color:#6a7284;text-decoration:underline;cursor:pointer;background:none;border:0;padding:0}
           .emp{margin-top:18px;padding:16px;border:1px solid #2a3042;border-radius:12px;text-align:left;font-size:14px;color:#cdd4e4}
           .emp p{margin:0 0 12px;color:#9aa3b6;font-size:13.5px}.emh{position:relative;overflow:hidden;width:100%;margin:0}
           .emh i{position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(255,255,255,.18)}.emh span{position:relative}</style>
@@ -447,7 +447,7 @@ setInterval(tgCheckGuards, 800);
         emStrip.style.cssText = "all:initial;position:fixed;left:0;right:0;top:0;z-index:2147483645;";
         const root = emStrip.attachShadow({ mode: "open" });
         const t = new Date(r.until).toLocaleTimeString(m.resolve(stageLang || tgLang), { hour: "2-digit", minute: "2-digit" });
-        setHTML(root, `<style>.s{display:flex;justify-content:center;gap:12px;align-items:center;padding:4px 12px;
+        setHTML(root, `<style>h1,h2,h3,h4{text-wrap:balance}p,li,label,.note,.small{text-wrap:pretty}.s{display:flex;justify-content:center;gap:12px;align-items:center;padding:4px 12px;
           background:rgba(17,21,31,.92);color:#cdd4e4;font:12px/1.4 system-ui,sans-serif;border-bottom:1px solid #2a3042}
           button{font:inherit;background:none;border:0;color:#7fa4ff;text-decoration:underline;cursor:pointer;padding:0}</style>
           <div class="s"><span></span><button></button></div>`);
@@ -470,7 +470,7 @@ setInterval(tgCheckGuards, 800);
     breakHost.style.cssText = "all:initial;position:fixed;inset:0;z-index:2147483647;";
     document.documentElement.appendChild(breakHost);
     const root = breakHost.attachShadow({ mode: "open" });
-    setHTML(root, `<style>.w{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+    setHTML(root, `<style>h1,h2,h3,h4{text-wrap:balance}p,li,label,.note,.small{text-wrap:pretty}.w{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
       background:rgba(10,12,18,.96);backdrop-filter:blur(14px);font:16px/1.6 system-ui,sans-serif;color:#e8ebf2}
       .c{text-align:center;max-width:380px;padding:32px}.t{font-size:52px;font-weight:700;font-variant-numeric:tabular-nums;margin:6px 0}
       h1{font-size:22px;margin:0 0 6px}p{color:#9aa3b6;margin:0}</style>
@@ -789,7 +789,7 @@ setInterval(tgCheckGuards, 800);
     pgBtnHost.style.cssText = "display:block;margin:8px 0 16px;";
     const root = pgBtnHost.attachShadow({ mode: "open" });
     const dark = pgDark();
-    setHTML(root, `<style>
+    setHTML(root, `<style>h1,h2,h3,h4{text-wrap:balance}p,li,label,.note,.small{text-wrap:pretty}
       .card{box-sizing:border-box;width:100%;padding:22px 18px;border-radius:12px;text-align:center;
         font:14px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;
         border:1px dashed ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.18)"};
@@ -1072,7 +1072,7 @@ setInterval(tgCheckGuards, 800);
       document.querySelectorAll("video").forEach(v => { try { v.pause(); } catch (_) {} });
       document.documentElement.appendChild(sfUrlCover);
       const r = sfUrlCover.attachShadow({ mode: "open" });
-      setHTML(r, `<style>.w{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+      setHTML(r, `<style>h1,h2,h3,h4{text-wrap:balance}p,li,label,.note,.small{text-wrap:pretty}.w{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
         background:rgba(10,12,18,.94);backdrop-filter:blur(8px);font:16px/1.5 system-ui,sans-serif;color:#e8ebf2}
         .c{text-align:center;max-width:360px;padding:30px}h1{font-size:21px;margin:8px 0}p{color:#9aa3b6;margin:0 0 18px}
         button{font:inherit;font-weight:650;padding:11px 18px;border:0;border-radius:11px;cursor:pointer;background:#3b82f6;color:#fff;margin:4px}
@@ -1633,7 +1633,7 @@ setInterval(tgCheckGuards, 800);
     tgUnderStyle("bp", bpUnder);
     document.documentElement.appendChild(bpCover);
     const r = bpCover.attachShadow({ mode: "open" });
-    setHTML(r, `<style>.w{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+    setHTML(r, `<style>h1,h2,h3,h4{text-wrap:balance}p,li,label,.note,.small{text-wrap:pretty}.w{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
       background:rgba(10,12,18,.95);backdrop-filter:blur(8px);font:16px/1.5 system-ui,sans-serif;color:#e8ebf2}
       .c{text-align:center;max-width:400px;padding:30px}h1{font-size:21px;margin:8px 0}p{color:#9aa3b6;margin:0 0 18px}
       button{font:inherit;font-weight:650;padding:11px 18px;border:0;border-radius:11px;cursor:pointer;background:#1b2130;color:#cdd4e4}</style>

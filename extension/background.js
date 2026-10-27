@@ -461,12 +461,36 @@ async function redirectToCooldown(tabId, host, reason, toUrl) {
     + `?host=${encodeURIComponent(host || "")}&reason=${encodeURIComponent(reason || "")}`;
   if (toUrl && /^https?:\/\//i.test(toUrl)) url += `&url=${encodeURIComponent(toUrl)}`;
   try { await chrome.tabs.update(tabId, { url }); } catch (_) {}
+  holdCheck(tabId, url);
+}
+// A page can hold its tab with a "Leave site?" dialog; answering "stay" cancels
+// the switch to the block screen. If the tab is still on the page a moment
+// later, it is replaced: the block screen opens in its place and the old tab
+// is closed (closing from here does not ask the page).
+const holdReplacing = new Set();
+function holdCheck(tabId, url) {
+  const ext = chrome.runtime.getURL("");
+  setTimeout(async () => {
+    if (holdReplacing.has(tabId)) return;
+    let t; try { t = await chrome.tabs.get(tabId); } catch (_) { return; }
+    if ((t.url || "").startsWith(ext)) return;
+    holdReplacing.add(tabId);
+    setTimeout(() => holdReplacing.delete(tabId), 10000);
+    try {
+      await chrome.tabs.create({ windowId: t.windowId, index: t.index, active: t.active, url });
+      // unload the page first (a discarded tab has no page left to ask), then close it
+      let gone = tabId;
+      try { const d = await chrome.tabs.discard(tabId); if (d && d.id != null) gone = d.id; } catch (_) {}
+      await chrome.tabs.remove(gone);
+    } catch (_) {}
+  }, 2500);
 }
 
 async function redirectVia(tabId, from, to) {
   const url = chrome.runtime.getURL("pages/redirecting.html")
     + `?from=${encodeURIComponent(from || "")}&to=${encodeURIComponent(to || "")}`;
   try { await chrome.tabs.update(tabId, { url }); } catch (_) {}
+  holdCheck(tabId, url);
 }
 
 async function addToBlocklist(host) {

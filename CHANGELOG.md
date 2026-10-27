@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.36.1
+- **“Leave site?” can't keep a blocked page open.** If a page holds its tab with that question and you answer “stay”, the tab is replaced by the block screen anyway.
+- Block screen: clearer texts (“Proxy-Seite gesperrt” / “Proxy site blocked”), the nudge in bold with one of two questions (“Was war das?” / “Wofür war das?”), and the hint on how to unblock only where it applies, and correct about the code and the one-hour wait.
+- Settings while locked: “Just look” shows everything read-only; exporting still works.
+- Line breaks: headings balanced, text set so the last line isn't a lone word. Icons sit on the first line of the heading next to them.
+- One more front-end name (Ghostlink).
+- docs/store-kit.md: every field for the Chrome Web Store and addons.mozilla.org.
+
 ## 1.36.0
 - **Frames within frames.** Content filter and proxy checks now also run in frames written by script (`about:blank`, `document.write`) and in frames inside frames. An adult page shown inside a site's own frame closes the site as a proxy (no emergency access). A browser inside a frame (address bar with back / forward / reload) is recognised too.
 - **Iframe shells**: sites whose menu only swaps local pages in one big frame (`data-src="play.html"`, `"uu.html"` …), especially under a school-tool title such as "Student Practice Center", are recognised.

@@ -285,11 +285,13 @@ async function submitGate() {
     await chrome.storage.local.set({ [KEY]: c });
     editingUnlocked = true;
     $("gate").style.display = "none";
+    setReadOnly(false);
     renderLock(c.lock);
     return;
   }
   editingUnlocked = true;
   $("gate").style.display = "none";
+  setReadOnly(false);
   renderLock(c.lock);
 }
 
@@ -538,4 +540,18 @@ async function boot() {
   tgRefresh();
   if (lock.enabled) openGate("change"); // gate on open until the code is typed
 }
+// ---- view only, while locked ---------------------------------------------------
+// The settings can be read (and exported) without typing the code; every
+// control that would change something stays inert until you unlock.
+const RO_KEEP = new Set(["exportBtn", "roUnlock", "jump", "gatePass", "gateSubmit", "gateView"]);
+function setReadOnly(on) {
+  document.body.classList.toggle("readonly", on);
+  document.querySelectorAll(".tg-main input, .tg-main textarea, .tg-main select, .tg-main button, #saveM, #save").forEach(el => {
+    if (RO_KEEP.has(el.id) || el.closest(".sortbar")) return;
+    if (on) { if (!el.disabled) { el.disabled = true; el.dataset.roOff = "1"; } }
+    else if (el.dataset.roOff) { el.disabled = false; delete el.dataset.roOff; }
+  });
+}
+$("gateView")?.addEventListener("click", () => { $("gate").style.display = "none"; if (!editingUnlocked) setReadOnly(true); });
+$("roUnlock")?.addEventListener("click", () => openGate("change"));
 boot();

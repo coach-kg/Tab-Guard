@@ -35,6 +35,8 @@ async function boot() {
   const cfg = (await chrome.storage.local.get("tabguardConfig")).tabguardConfig || {};
   LANG = cfg.language || "auto";
   document.getElementById("host").textContent = host || t(LANG, "cd_thisSite");
+  // the nudge, with one of two questions
+  document.getElementById("nudge").textContent = t(LANG, "cd_nudge") + " " + t(LANG, Math.random() < 0.5 ? "cd_nudgeQ1" : "cd_nudgeQ2");
 
   const hard = reason === "blocked" || reason === "adult" || reason === "import" || reason === "unfiltered" || reason === "proxy";
   const adultish = reason === "adult" || reason === "unfiltered" || reason === "proxy";
@@ -45,10 +47,15 @@ async function boot() {
     document.getElementById("lead").textContent = "";
     document.getElementById("host").style.display = "none";
     document.getElementById("reason").textContent = t(LANG, { adult: "cd_reasonAdult", import: "cd_reasonImport", unfiltered: "cd_reasonUnfiltered", proxy: "cd_reasonProxy" }[reason] || "cd_reasonBlock");
-    const p = document.createElement("p");
-    p.className = "small";
-    p.textContent = t(LANG, "cd_removeHint");
-    document.querySelector(".card").appendChild(p);
+    // how to undo it — only where that is possible, and said as it is
+    const locked = !!(cfg.lock && cfg.lock.enabled);
+    const hintKey = reason === "proxy" ? "cd_hintProxy" : reason === "unfiltered" ? "" : locked ? "cd_hintLock" : "cd_hintNoLock";
+    if (hintKey) {
+      const p = document.createElement("p");
+      p.className = "small";
+      p.textContent = t(LANG, hintKey);
+      document.querySelector(".card").appendChild(p);
+    }
   } else {
     document.querySelector("h1").textContent = t(LANG, "cd_cooldown");
     document.getElementById("lead").textContent = t(LANG, "cd_lead");
