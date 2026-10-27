@@ -29,15 +29,16 @@ Made for brains that keep chasing the next new thing.
 
 | | |
 |---|---|
-| **Feed to friction** | After one page of an endless feed, new posts wait behind a button with a short countdown. |
-| **Tab circuit breaker** | Four tabs of one site in 90 seconds trigger a breathing pause; seven in five minutes lock the site for 30 minutes. When the lock ends, you land where you were going. |
+| **Feed brake** | After one page of an endless feed, new posts wait behind a button with a short countdown. |
+| **Tab brake** | Four tabs of one site in 90 seconds trigger a breathing pause; seven in five minutes lock the site for 30 minutes. When the lock ends, you land where you were going. |
 | **Breathing pause + intention** | One breath, then one question: what are you here for? One clear word is enough. |
-| **Escalation ladder** | The longer you linger on watched sites, the greyer and blurrier images get, up to a block. The pressure eases off by itself. |
-| **Short-form filter** | Hides or blurs vertical short videos, also inside embedded players, and `/shorts/` or `/reels/` pages. Landscape videos stay untouched. |
+| **Waiting room** | Sites you pick open only after a short wait with one question, then stay free for a while. |
+| **Stimulus dimmer** | The longer you linger on watched sites, the greyer and blurrier images get, up to a block. The pressure eases off by itself. |
+| **Short-video filter** | Hides or blurs vertical short videos, also inside embedded players, and `/shorts/` or `/reels/` pages. Landscape videos stay untouched. |
 | **Calm view** | Grey or blur all pictures from the popup, with exceptions per site. Hover a moment to see one. |
 | **Video previews** | Stops hover-preview clips and freezes animated GIFs on their first frame. |
 | **Content filter** | Recognises adult sites by what's on the page, blocks them, and enforces SafeSearch on Google, Bing, DuckDuckGo, Brave, Yahoo and SearXNG. Proxy and unblocked-games sites are recognised by how they are built and closed; on YouTube, guides for getting around filters are hidden. |
-| **Blocklist, import, redirects** | Your own blocklist, imported lists (e.g. from Cold Turkey), and redirects such as reddit.com → a calmer front end. |
+| **Blocklist, imports, redirects** | Your own blocklist, as many imported lists as you like (e.g. from Cold Turkey), and redirects such as reddit.com → a calmer front end. |
 | **Exits that cost a little** | Pausing or resetting waits a bit longer each time, with a daily budget you set. |
 | **Never blocked** | Helplines, health and government sites are never blocked or slowed. Once a day there's 20 minutes of emergency access to a blocked site. |
 

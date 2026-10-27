@@ -13,6 +13,8 @@
 // A change that was already waiting keeps its time, so saving again does not
 // restart the hour; undoing it (switching back on, re-adding) drops it.
 
+import { DEFAULT_CONFIG } from "./config.js";
+
 export const LOOSEN_DELAY = 60 * 60000;
 
 const off = (a, b) => a !== false && b === false;
@@ -34,8 +36,11 @@ export const FIELDS = [
   ["exits.resetMode", "halve", (a, b) => a !== "full" && b === "full"],
   ["exits.notOnGrey", true, off],
   ["lateNight.end", "05:00", (a, b) => toMin(b) < toMin(a)],   // your day start: earlier = a fresh day sooner
+  ["waitRoom.enabled", true, off],
+  ["waitRoom.seconds", 20, (a, b) => +b < +a],
+  ["waitRoom.openMinutes", 15, (a, b) => +b > +a],
 ];
-export const LISTS = ["blocklist", "adultBlock.extraHosts", "adultBlock.terms", "adultBlock.bypassSites"];
+export const LISTS = ["blocklist", "adultBlock.extraHosts", "adultBlock.terms", "adultBlock.bypassSites", "waitRoom.hosts"];
 // lists where ADDING loosens protection (sites that may never be blocked, and
 // trusted / academic / streaming sites, which skip the friction)
 export const ADD_LISTS = ["essentialExtra", "allowlist", "academicSearch", "streamingHosts"];
@@ -58,7 +63,7 @@ export function holdLoosening(prev, next, now = Date.now()) {
   const P = empty();
   // copy the nested objects we may touch, so prev stays untouched
   next = { ...next };
-  for (const top of ["adultBlock", "exits", "lateNight"]) if (next[top]) next[top] = { ...next[top] };
+  for (const top of ["adultBlock", "exits", "lateNight", "waitRoom"]) if (next[top]) next[top] = { ...next[top] };
 
   for (const [path, dflt, looser] of FIELDS) {
     const a = get(prev, path) ?? dflt, b = get(next, path);
@@ -78,7 +83,8 @@ export function holdLoosening(prev, next, now = Date.now()) {
     set(next, path, [...b, ...removed]);                   // still listed until their hour is over
   }
   for (const path of ADD_LISTS) {
-    const a = get(prev, path) || [], b = get(next, path);
+    // a list never saved yet is still the built-in default, not empty
+    const a = get(prev, path) || get(DEFAULT_CONFIG, path) || [], b = get(next, path);
     if (!Array.isArray(b)) continue;
     const added = b.filter(x => !a.includes(x));
     if (!added.length) continue;
@@ -96,7 +102,7 @@ export function withPendingShown(c) {
   const p = c && c.loosenPending;
   if (isEmpty(p)) return c;
   const out = { ...c };
-  for (const top of ["adultBlock", "exits", "lateNight"]) if (out[top]) out[top] = { ...out[top] };
+  for (const top of ["adultBlock", "exits", "lateNight", "waitRoom"]) if (out[top]) out[top] = { ...out[top] };
   for (const [path, w] of Object.entries(p.fields || {})) set(out, path, w.v);
   for (const [path, items] of Object.entries(p.remove || {})) {
     const list = get(out, path) || [];
@@ -114,7 +120,7 @@ export function applyDue(c, now = Date.now()) {
   const p = c && c.loosenPending;
   if (isEmpty(p)) return { config: c, changed: false };
   const out = { ...c };
-  for (const top of ["adultBlock", "exits", "lateNight"]) if (out[top]) out[top] = { ...out[top] };
+  for (const top of ["adultBlock", "exits", "lateNight", "waitRoom"]) if (out[top]) out[top] = { ...out[top] };
   const rest = empty();
   let changed = false;
   for (const [path, w] of Object.entries(p.fields || {})) {

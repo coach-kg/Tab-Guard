@@ -91,3 +91,39 @@ export function importStats(data) {
     searches: pats.filter(p => /[?&*/](q|p|query|search)=/.test(p)).length,
   };
 }
+
+// ---- several lists -------------------------------------------------------------
+// { lists: [{ id, name, at, data: {hosts, prefixes, patterns}, removeAt? }] }
+// Adding a list applies at once. Removing one waits an hour (removeAt); until
+// then it still counts. The older single list (IMPORT_KEY, IMPORT_NEXT_KEY)
+// is moved over once.
+export const LISTS_KEY = "tabguardImports";
+export function listsMerged(store) {
+  let out = null;
+  for (const l of (store && store.lists) || []) out = mergeImports(out, l.data);
+  return out;
+}
+export function dueLists(store, now = Date.now()) {
+  const lists = (store && store.lists) || [];
+  const keep = lists.filter(l => !(l.removeAt && l.removeAt <= now));
+  return keep.length === lists.length ? null : { lists: keep };
+}
+export async function migrateImports(storage) {
+  const g = await storage.get([LISTS_KEY, IMPORT_KEY, IMPORT_NEXT_KEY]);
+  if (g[LISTS_KEY] || (!g[IMPORT_KEY] && !g[IMPORT_NEXT_KEY])) return g[LISTS_KEY] || { lists: [] };
+  const lists = [];
+  const next = g[IMPORT_NEXT_KEY];
+  const stamp = (d, extra) => ({ id: Math.random().toString(36).slice(2, 10), name: (d && d.name) || "Import", at: (d && d.at) || Date.now(),
+    data: { hosts: (d && d.hosts) || [], prefixes: (d && d.prefixes) || [], patterns: (d && d.patterns) || [] }, ...extra });
+  if (next && next.data) {
+    // a replacement was waiting: the new list stays, the old one leaves at that time
+    lists.push(stamp(next.data));
+    if (g[IMPORT_KEY]) lists.push(stamp({ ...g[IMPORT_KEY], name: "(alt)" }, { removeAt: next.at }));
+  } else if (g[IMPORT_KEY]) {
+    lists.push(stamp(g[IMPORT_KEY], next && !next.data ? { removeAt: next.at } : {}));
+  }
+  const store = { lists };
+  await storage.set({ [LISTS_KEY]: store });
+  await storage.remove([IMPORT_KEY, IMPORT_NEXT_KEY]);
+  return store;
+}

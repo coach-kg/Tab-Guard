@@ -84,6 +84,7 @@
   .mini-btn { font-family: inherit; font-size: 13px; font-weight: 700; padding: 8px 14px; border: 1px solid var(--line-2);
     border-radius: 9px; cursor: pointer; background: var(--panel); color: var(--ink); }
   .mini-btn:hover { border-color: var(--accent); }
+  a.mini-btn { text-decoration: none; display: inline-block; }
   .exp { font: 600 10px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--warn);
     border: 1px solid currentColor; border-radius: 999px; padding: 2px 6px; margin-left: 6px; vertical-align: 1px; }
   .ess summary { cursor: pointer; color: var(--muted); font-size: 14px; }
@@ -122,12 +123,68 @@
     border-radius: 12px; cursor: pointer; background: var(--accent); color: #06122e; }
   .saved { font-family: var(--mono); font-size: 13px; color: var(--ok); opacity: 0; transition: opacity .2s; }
   .saved.show { opacity: 1; }
+
+  /* ---- 1.37 layout: cards, readable headings, full-height nav ---------------- */
+  body { max-width: 1100px; padding-top: 0; }
+  header { padding: 34px 0 6px; margin-bottom: 18px; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 20px; }
+  header .tour { font-size: 13.5px; color: var(--accent); text-decoration: none; white-space: nowrap; }
+  header .tour:hover { text-decoration: underline; }
+  .tg-layout { gap: 34px; }
+  .tg-nav { top: 0; flex: 0 0 214px; height: 100vh; max-height: 100vh; padding: 10px 8px 40px 0; }
+  .tg-nav a { padding: 6px 10px; font-size: 13.5px; }
+  .grp { display: block; font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--faint); margin: 34px 2px 12px; }
+  .tg-main > .grp:first-of-type { margin-top: 4px; }
+  .tg-main section, .tg-main section:first-child { background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+    padding: 20px 22px 14px; margin: 0 0 12px; scroll-margin-top: 16px; }
+  h2 { font-size: 17px; font-weight: 700; letter-spacing: -.005em; text-transform: none; color: var(--ink);
+    line-height: 24px; margin: 0 0 6px; gap: 10px; }
+  h2 .ic { font-size: 18px; height: 24px; }
+  h2 > .note-inline, h2 [data-i18n="o_h_jug_sub"] { font-size: 14px; }
+  section > .note:first-of-type { margin: 0 0 12px; }
+  .note { color: var(--muted); font-size: 13.5px; line-height: 1.5; margin: 4px 0 12px; }
+  h3.sub { font-size: 14px; font-weight: 700; color: var(--ink); margin: 20px 0 4px; }
+  .field { padding: 11px 0; }
+  .field + .field { border-top: 1px solid var(--line); }
+  .field label { color: var(--ink); font-size: 14.5px; }
+  textarea { margin: 6px 0 10px; }
+  .ta-wrap { position: relative; }
+  h2:has(.h2sub) { flex-wrap: wrap; }
+  .h2sub { font-weight: 400; color: var(--faint); font-size: 14px; }
+  @media (max-width: 720px) { .h2sub { flex: 1 1 100%; padding-left: 28px; margin-top: -4px; } }
+  .ta-wrap textarea { padding-right: 56px; scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+  .sortbtn { position: absolute; top: 14px; right: 18px; width: 34px; height: 30px; display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 8px; border: 1px solid var(--line-2); background: var(--panel); color: var(--muted); cursor: pointer; padding: 0; }
+  .sortbtn:hover { color: var(--ink); border-color: var(--accent); }
+  .sortbtn svg { width: 18px; height: 18px; }
+  .lists { display: grid; gap: 8px; margin: 6px 0 4px; }
+  .lists .li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px;
+    border: 1px solid var(--line-2); border-radius: 12px; background: var(--panel-2); }
+  .lists .li .nm { font-weight: 700; font-size: 14px; overflow-wrap: anywhere; }
+  .lists .li .st { font-family: var(--mono); font-size: 11.5px; color: var(--faint); }
+  .lists .li .pd { font-size: 12.5px; color: var(--warn); margin-top: 2px; }
+  .lists .empty { color: var(--faint); font-size: 13px; }
+  .save { position: sticky; bottom: 0; margin: 24px 0 0; padding: 14px 0 18px;
+    background: linear-gradient(to bottom, transparent, var(--bg) 40%); }
+  footer { padding-bottom: 20px; }
+  @media (max-width: 720px) {
+    header { padding-top: 18px; }
+    .tg-main section, .tg-main section:first-child { padding: 16px 15px 10px; border-radius: 14px; }
+    .grp { margin: 26px 2px 10px; }
+    .field { flex-wrap: wrap; gap: 8px 12px; }
+    .field label { flex: 1 1 60%; }
+    .field .in { min-width: 0; margin-left: auto; }
+    .field .in[style*="min-width"] { min-width: 0 !important; flex: 1 1 100%; }
+    #intentQ { width: 100% !important; }
+    .lists .li { flex-wrap: wrap; }
+  }
 </style>
 </head>
 <body>
   <header>
-    <h1>Tab Guard</h1>
-    <p data-i18n="o_intro">Trusted sites are left alone. Everything else is watched.</p>
+    <div><h1>Tab Guard</h1>
+    <p data-i18n="o_intro">Trusted sites are left alone. Everything else is watched.</p></div>
+    <a class="tour" href="../pages/welcome.html" data-i18n="o_b_tourTop">Introduction</a>
   </header>
 
   <div class="mbar" id="mbar">
@@ -139,7 +196,8 @@
   <aside id="nav" class="tg-nav"></aside>
   <main class="tg-main">
   <div id="roBar"><span data-i18n="o_ro_note">View only. Unlock to change anything; export works.</span><button type="button" id="roUnlock" class="mini-btn" data-i18n="o_ro_unlock">Unlock</button></div>
-<section id="s_o_h_language">
+  <div class="grp" data-i18n="o_grp_basics"></div>
+  <section id="s_o_h_language">
     <h2><span class="ic">🌍</span> <span data-i18n="o_h_language">language</span></h2>
     <p class="note" data-i18n="o_n_language">Applies to the popup, interventions and block pages.</p>
     <div class="field"><label data-i18n="o_l_language">Language</label><span class="in"><select id="language">
@@ -168,23 +226,39 @@
     <p class="note" data-i18n="o_n_proxies">Any address with ezproxy. or libproxy. in it.</p>
   </section>
 
-  <div class="grp" data-i18n="o_grp_media" style="margin:30px 0 -4px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--faint);text-transform:uppercase"></div>
+  <section id="s_o_h_streaming">
+    <h2><span class="ic">🎬</span> <span data-i18n="o_h_streaming">streaming</span></h2>
+    <p class="note" data-i18n="o_n_streaming">Sites you watch on purpose — trusted, never greyscaled.</p>
+    <textarea id="streaming" spellcheck="false"></textarea>
+    <p class="note" id="streamPending" style="display:none;color:var(--warn);margin:4px 0 0"></p>
+  </section>
 
+  <section id="s_o_h_essential">
+    <h2><span class="ic">🛟</span> <span data-i18n="o_h_essential">never blocked</span></h2>
+    <p class="note" data-i18n="o_n_essential"></p>
+    <details class="ess"><summary data-i18n="o_l_essentialList">built-in list</summary><p class="mono note" id="essList" style="margin:8px 0 0;word-spacing:.3em"></p></details>
+    <p class="note" data-i18n="o_n_essentialExtra" style="margin-top:12px"></p>
+    <textarea id="essentialExtra" spellcheck="false" style="min-height:70px"></textarea>
+    <p class="note" id="essPending" style="display:none;color:var(--warn);margin:4px 0 0"></p>
+  </section>
+
+  <div class="grp" data-i18n="o_grp_block"></div>
   <section id="s_o_h_blocklist">
     <h2><span class="ic">⛔</span> <span data-i18n="o_h_blocklist">blocklist</span></h2>
     <p class="note" data-i18n="o_n_blocklist">Hard-blocked hosts.</p>
     <textarea id="blocklist" spellcheck="false"></textarea>
     <p class="note" id="blockPending" style="display:none;color:var(--warn);margin:4px 0 0"></p>
     <div class="field"><label data-i18n="o_l_autoBlock">Auto-add a domain when it gets locked</label><span class="in"><span class="state" id="autoBlockS">off</span><label class="sw"><input type="checkbox" id="autoBlock"><span></span></label></span></div>
-    <div class="field"><label data-i18n="o_l_ctImport">Import a list (Cold Turkey, hosts)</label><span class="in"><button type="button" id="ctPick" class="mini-btn" data-i18n="o_b_ctPick">choose file…</button><button type="button" id="ctRemove" class="mini-btn danger" data-i18n="o_b_ctRemove" style="display:none">remove</button></span></div>
-    <input type="file" id="ctFile" accept=".txt,.ctbbl,.csv,text/plain" style="display:none">
-    <p class="note mono" id="ctStats" style="margin:0 0 6px"></p>
-    <p class="note" id="ctPending" style="display:none;color:var(--warn);margin:0 0 6px"></p>
-    <p class="note" data-i18n="o_n_ctImport">Saved locally and not shown. Counts as a hard rule: it also applies during a pause. A new import replaces the old one.</p>
+    <h3 class="sub" data-i18n="o_h_lists">Imported lists</h3>
+    <p class="note" data-i18n="o_n_ctImport">Saved locally and not shown. A hard rule: also during a pause.</p>
+    <div id="lists" class="lists"></div>
+    <div class="field"><label data-i18n="o_l_ctImport">Add a list (Cold Turkey, hosts)</label><span class="in"><button type="button" id="ctPick" class="mini-btn" data-i18n="o_b_ctPick">choose file…</button></span></div>
+    <input type="file" id="ctFile" accept=".txt,.ctbbl,.csv,text/plain" style="display:none" multiple>
+    <p class="note" id="ctMsg" style="display:none;margin:0 0 6px"></p>
   </section>
 
   <section id="s_o_h_jug">
-    <h2><span class="ic">🔞</span> <span data-i18n="o_h_jug">content filter</span> <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--faint)">· <span data-i18n="o_h_jug_sub">adult</span></span></h2>
+    <h2><span class="ic">🔞</span> <span data-i18n="o_h_jug">content filter</span> <span class="h2sub">· <span data-i18n="o_h_jug_sub">adult</span></span></h2>
     <p class="note" data-i18n="o_n_jug">Blocks known adult domains + RTA-labelled pages.</p>
     <p class="note" id="adultPending" style="display:none;color:var(--warn);margin:0 0 4px"></p>
     <div class="field"><label data-i18n="o_l_enabled">Enabled</label><span class="in"><span class="state" id="adultS">off</span><label class="sw"><input type="checkbox" id="adult"><span></span></label></span></div>
@@ -210,12 +284,24 @@
     <div id="biList" style="display:none" class="bi-box"><p class="mono" id="biTerms" style="margin:0 0 6px;word-spacing:.4em"></p><p class="note" id="biTimer" style="margin:0"></p></div>
   </section>
 
+  <section id="s_o_h_waitroom">
+    <h2><span class="ic">⏳</span> <span data-i18n="o_h_waitroom">waiting room</span></h2>
+    <p class="note" data-i18n="o_n_waitroom">These sites open only after a short wait with one question.</p>
+    <div class="field"><label data-i18n="o_l_enabled">Enabled</label><span class="in"><span class="state" id="wrOnS">on</span><label class="sw"><input type="checkbox" id="wrOn" checked><span></span></label></span></div>
+    <div class="field" data-dep="wrOn"><label data-i18n="o_l_wrSec">Wait (seconds)</label><span class="in"><input type="number" id="wrSec" min="5" max="300"></span></div>
+    <div class="field" data-dep="wrOn"><label data-i18n="o_l_wrOpen">Then free for (minutes)</label><span class="in"><input type="number" id="wrOpen" min="1" max="240"></span></div>
+    <p class="note" data-i18n="o_n_wrHosts" data-dep="wrOn" style="margin:6px 0 0">One site per line.</p>
+    <textarea id="wrHosts" spellcheck="false" data-dep="wrOn" placeholder="youtube.com"></textarea>
+    <p class="note" id="wrPending" style="display:none;color:var(--warn);margin:4px 0 0"></p>
+  </section>
+
   <section id="s_o_h_redirects">
     <h2><span class="ic">↪️</span> <span data-i18n="o_h_redirects">redirects</span></h2>
     <p class="note" data-i18n="o_n_redirects">Send a watched site to a calmer one. from ⇒ to</p>
     <textarea id="redirects" spellcheck="false" placeholder="reddit.com > safereddit.com"></textarea>
   </section>
 
+  <div class="grp" data-i18n="o_grp_behaviour"></div>
   <section id="s_o_h_intention">
     <h2><span class="ic">🎯</span> <span data-i18n="o_h_intention">intention prompt &amp; better sources</span></h2>
     <p class="note" data-i18n="o_n_intention">The pause that asks what you're here for.</p>
@@ -226,18 +312,6 @@
     <div class="field" data-dep="srcOn"><label data-i18n="o_l_sourcesAfter">…only after (active min)</label><span class="in"><input type="number" id="srcAfter" min="0" step="1"></span></div>
     <textarea id="betterSources" data-dep="srcOn" spellcheck="false" placeholder="ARTE Mediathek > https://www.arte.tv/de/"></textarea>
   </section>
-
-  
-
-  <section id="s_o_h_fullblur">
-    <h2><span class="ic">🌁</span> <span data-i18n="o_h_fullblur">whole-page blur</span></h2>
-    <p class="note" data-i18n="o_n_fullblur">On these hosts the blur covers the whole page incl. text, and text can't be selected or copied. Others get media-only.</p>
-    <textarea id="fullBlur" spellcheck="false"></textarea>
-    <div class="field"><label data-i18n="o_l_fbAll">Apply whole-page blur to all watched sites</label><span class="in"><span class="state" id="fbAllS">off</span><label class="sw"><input type="checkbox" id="fbAll"><span></span></label></span></div>
-    <div class="field"><label data-i18n="o_l_fbLinks">Also disable links while blurred</label><span class="in"><span class="state" id="fbLinksS">off</span><label class="sw"><input type="checkbox" id="fbLinks"><span></span></label></span></div>
-  </section>
-
-  <div class="grp" data-i18n="o_grp_behaviour" style="margin:30px 0 -4px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--faint);text-transform:uppercase"></div>
 
   <section id="s_o_h_breaker">
     <h2><span class="ic">🗂️</span> <span data-i18n="o_h_breaker">tab circuit breaker</span></h2>
@@ -250,14 +324,22 @@
     <div class="field"><label data-i18n="o_l_cooldownIgnored">Cooldown after N ignored</label><span class="in"><input type="number" id="ignored" min="1"></span></div>
   </section>
 
-  
-
   <section id="s_o_h_scroll">
     <h2><span class="ic">🌀</span> <span data-i18n="o_h_scroll">scroll intervention</span></h2>
     <p class="note" data-i18n="o_n_scroll"></p>
     <div class="field"><label data-i18n="o_l_intensity">Intensity trigger (0–100)</label><span class="in"><input type="number" id="intense" min="30" max="100"></span></div>
     <div class="field"><label data-i18n="o_l_watchAfter">Watch after (active min)</label><span class="in"><input type="number" id="watchAfter" step="0.5" min="0"></span></div>
     <div class="field"><label data-i18n="o_l_breathPause">Breathing pause (sec)</label><span class="in"><input type="number" id="breath" min="3"></span></div>
+  </section>
+
+  <section id="s_o_h_pagination">
+    <h2><span class="ic">📄</span> <span data-i18n="o_h_pagination">feed pagination (good friction)</span></h2>
+    <p class="note" data-i18n="o_n_pagination">Cap infinite feeds to a page.</p>
+    <div class="field"><label data-i18n="o_l_pgEnabled">Enabled</label><span class="in"><span class="state" id="pgOnS">off</span><label class="sw"><input type="checkbox" id="pgOn"><span></span></label></span></div>
+    <div class="field" data-dep="pgOn"><label data-i18n="o_l_pgSize">Items per page</label><span class="in"><input type="number" id="pgSize" min="1"></span></div>
+    <div class="field" data-dep="pgOn"><label data-i18n="o_l_pgDelay">Button countdown (sec, 0=instant)</label><span class="in"><input type="number" id="pgDelay" min="0"></span></div>
+    <p class="note" data-i18n="o_n_pgHosts" data-dep="pgOn">Limit to these hosts (empty = all watched).</p>
+    <textarea id="pgHosts" spellcheck="false" data-dep="pgOn"></textarea>
   </section>
 
   <section id="s_o_h_escalation">
@@ -283,15 +365,15 @@
     <div class="field" data-dep="churnOn"><label data-i18n="o_l_within">…within seconds</label><span class="in"><input type="number" id="churnSec" min="10"></span></div>
   </section>
 
-  <section id="s_o_h_previews">
-    <h2><span class="ic">🎞️</span> <span data-i18n="o_h_previews">video previews</span></h2>
-    <p class="note" data-i18n="o_n_previews">Stops the clips thumbnails play when you point at them.</p>
-    <div class="field"><label data-i18n="o_l_enabled">Enabled</label><span class="in"><span class="state" id="pvOnS">on</span><label class="sw"><input type="checkbox" id="pvOn" checked><span></span></label></span></div>
-    <div class="field" data-dep="pvOn"><label data-i18n="o_l_pvGifs">Freeze animated GIFs and looping clips</label><span class="in"><span class="state" id="pvGifsS">on</span><label class="sw"><input type="checkbox" id="pvGifs" checked><span></span></label></span></div>
-    <div class="field" data-dep="pvOn"><label data-i18n="o_l_pvSwap">Stop thumbnails swapping to an animation on hover</label><span class="in"><span class="state" id="pvSwapS">on</span><label class="sw"><input type="checkbox" id="pvSwap" checked><span></span></label></span></div>
-    <div class="field" data-dep="pvOn"><label data-i18n="o_l_pvEverywhere">Also on trusted sites</label><span class="in"><span class="state" id="pvAllS">off</span><label class="sw"><input type="checkbox" id="pvAll"><span></span></label></span></div>
+  <section id="s_o_h_latenight">
+    <h2><span class="ic">🌙</span> <span data-i18n="o_h_latenight">late-night hard mode</span></h2>
+    <p class="note" data-i18n="o_n_latenight"></p>
+    <div class="field"><label data-i18n="o_l_enabled">Enabled</label><span class="in"><span class="state" id="lnOnS">off</span><label class="sw"><input type="checkbox" id="lnOn"><span></span></label></span></div>
+    <div class="field" data-dep="lnOn"><label data-i18n="o_l_start">Start</label><span class="in"><input type="time" id="lnStart"></span></div>
+    <div class="field" data-dep="lnOn"><label data-i18n="o_l_end">End</label><span class="in"><input type="time" id="lnEnd"></span></div>
   </section>
 
+  <div class="grp" data-i18n="o_grp_media"></div>
   <section id="s_o_h_shortform">
     <h2><span class="ic">📱</span> <span data-i18n="o_h_shortform">short-form video filter</span></h2>
     <p class="note" data-i18n="o_n_shortform">Hide vertical and/or very short videos.</p>
@@ -312,35 +394,24 @@
     <p class="note" data-i18n="o_n_sfSwipe" data-dep="sfOn" style="margin-top:2px"></p>
   </section>
 
-    <section id="s_o_h_pagination">
-    <h2><span class="ic">📄</span> <span data-i18n="o_h_pagination">feed pagination (good friction)</span></h2>
-    <p class="note" data-i18n="o_n_pagination">Cap infinite feeds to a page.</p>
-    <div class="field"><label data-i18n="o_l_pgEnabled">Enabled</label><span class="in"><span class="state" id="pgOnS">off</span><label class="sw"><input type="checkbox" id="pgOn"><span></span></label></span></div>
-    <div class="field" data-dep="pgOn"><label data-i18n="o_l_pgSize">Items per page</label><span class="in"><input type="number" id="pgSize" min="1"></span></div>
-    <div class="field" data-dep="pgOn"><label data-i18n="o_l_pgDelay">Button countdown (sec, 0=instant)</label><span class="in"><input type="number" id="pgDelay" min="0"></span></div>
-    <p class="note" data-i18n="o_n_pgHosts" data-dep="pgOn">Limit to these hosts (empty = all watched).</p>
-    <textarea id="pgHosts" spellcheck="false" data-dep="pgOn"></textarea>
+  <section id="s_o_h_previews">
+    <h2><span class="ic">🎞️</span> <span data-i18n="o_h_previews">video previews</span></h2>
+    <p class="note" data-i18n="o_n_previews">Stops the clips thumbnails play when you point at them.</p>
+    <div class="field"><label data-i18n="o_l_enabled">Enabled</label><span class="in"><span class="state" id="pvOnS">on</span><label class="sw"><input type="checkbox" id="pvOn" checked><span></span></label></span></div>
+    <div class="field" data-dep="pvOn"><label data-i18n="o_l_pvGifs">Freeze animated GIFs and looping clips</label><span class="in"><span class="state" id="pvGifsS">on</span><label class="sw"><input type="checkbox" id="pvGifs" checked><span></span></label></span></div>
+    <div class="field" data-dep="pvOn"><label data-i18n="o_l_pvSwap">Stop thumbnails swapping to an animation on hover</label><span class="in"><span class="state" id="pvSwapS">on</span><label class="sw"><input type="checkbox" id="pvSwap" checked><span></span></label></span></div>
+    <div class="field" data-dep="pvOn"><label data-i18n="o_l_pvEverywhere">Also on trusted sites</label><span class="in"><span class="state" id="pvAllS">off</span><label class="sw"><input type="checkbox" id="pvAll"><span></span></label></span></div>
   </section>
 
-<section id="s_o_h_streaming">
-    <h2><span class="ic">🎬</span> <span data-i18n="o_h_streaming">streaming</span></h2>
-    <p class="note" data-i18n="o_n_streaming">Sites you watch on purpose — trusted, never greyscaled.</p>
-    <textarea id="streaming" spellcheck="false"></textarea>
-    <p class="note" id="streamPending" style="display:none;color:var(--warn);margin:4px 0 0"></p>
+  <section id="s_o_h_fullblur">
+    <h2><span class="ic">🌁</span> <span data-i18n="o_h_fullblur">whole-page blur</span></h2>
+    <p class="note" data-i18n="o_n_fullblur">On these hosts the blur covers the whole page incl. text, and text can't be selected or copied. Others get media-only.</p>
+    <textarea id="fullBlur" spellcheck="false"></textarea>
+    <div class="field"><label data-i18n="o_l_fbAll">Apply whole-page blur to all watched sites</label><span class="in"><span class="state" id="fbAllS">off</span><label class="sw"><input type="checkbox" id="fbAll"><span></span></label></span></div>
+    <div class="field"><label data-i18n="o_l_fbLinks">Also disable links while blurred</label><span class="in"><span class="state" id="fbLinksS">off</span><label class="sw"><input type="checkbox" id="fbLinks"><span></span></label></span></div>
   </section>
 
-  <section id="s_o_h_latenight">
-    <h2><span class="ic">🌙</span> <span data-i18n="o_h_latenight">late-night hard mode</span></h2>
-    <p class="note" data-i18n="o_n_latenight"></p>
-    <div class="field"><label data-i18n="o_l_enabled">Enabled</label><span class="in"><span class="state" id="lnOnS">off</span><label class="sw"><input type="checkbox" id="lnOn"><span></span></label></span></div>
-    <div class="field" data-dep="lnOn"><label data-i18n="o_l_start">Start</label><span class="in"><input type="time" id="lnStart"></span></div>
-    <div class="field" data-dep="lnOn"><label data-i18n="o_l_end">End</label><span class="in"><input type="time" id="lnEnd"></span></div>
-  </section>
-
-
-
-  <div class="grp" data-i18n="o_grp_safety" style="margin:30px 0 -4px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--faint);text-transform:uppercase"></div>
-
+  <div class="grp" data-i18n="o_grp_safety"></div>
   <section id="s_o_h_pause">
     <h2><span class="ic">⏸️</span> <span data-i18n="o_h_pause">pausing protection</span></h2>
     <p class="note" data-i18n="o_n_pause">The pause button in the popup switches everything off for a while.</p>
@@ -354,15 +425,6 @@
     <div class="field" data-dep="exOn"><label data-i18n="o_l_exGrey">Not from a grey or blurred page</label><span class="in"><span class="state" id="exGreyS">on</span><label class="sw"><input type="checkbox" id="exGrey" checked><span></span></label></span></div>
     <div class="field"><label data-i18n="o_l_exReset">“Reset pressure” does</label><span class="in"><select id="exReset"><option value="halve" data-i18n="o_ex_halve">halve it</option><option value="full" data-i18n="o_ex_full">clear it completely</option></select></span></div>
     <p class="note" id="exPending" style="display:none;color:var(--warn);margin:4px 0 0"></p>
-  </section>
-
-  <section id="s_o_h_essential">
-    <h2><span class="ic">🛟</span> <span data-i18n="o_h_essential">never blocked</span></h2>
-    <p class="note" data-i18n="o_n_essential"></p>
-    <details class="ess"><summary data-i18n="o_l_essentialList">built-in list</summary><p class="mono note" id="essList" style="margin:8px 0 0;word-spacing:.3em"></p></details>
-    <p class="note" data-i18n="o_n_essentialExtra" style="margin-top:12px"></p>
-    <textarea id="essentialExtra" spellcheck="false" style="min-height:70px"></textarea>
-    <p class="note" id="essPending" style="display:none;color:var(--warn);margin:4px 0 0"></p>
   </section>
 
   <section id="s_o_h_lock">
@@ -387,11 +449,10 @@
     <p class="note" data-i18n="o_n_backup">Export all settings and lists to a file, or import one.</p>
     <div class="field"><label data-i18n="o_l_settingsFile">Your settings as a file</label><span class="in"><button type="button" id="exportBtn" class="mini-btn" data-i18n="o_b_export">Export JSON</button> <button type="button" id="importBtn" class="mini-btn" data-i18n="o_b_import">Import…</button></span></div>
     <input type="file" id="importFile" accept="application/json,.json" style="display:none">
+    <div class="field"><label data-i18n="o_l_tour">Introduction</label><span class="in"><a class="mini-btn" href="../pages/welcome.html" data-i18n="o_b_tour">show again</a></span></div>
     <div class="note" id="importMsg"></div>
   </section>
 
-  <!-- OPTIONAL, EXPERIMENTAL: Touch Grass link (src/touchGrass.js). Collapsed
-       by default; nothing here is needed to use Tab Guard. -->
   <section id="s_o_h_exp">
     <h2><span class="ic">🧪</span> <span data-i18n="o_h_exp">experimental</span></h2>
     <details class="ess" id="expBox">
@@ -409,7 +470,7 @@
 
   <footer style="margin-top:40px;text-align:center;color:var(--faint);font-size:12.5px;line-height:1.8">
     <div>Tab&nbsp;Guard <span class="mono" id="verLabel"></span></div>
-    <div data-i18n="o_footerMade">Made with ♥ in Neu-Ulm</div>
+    <div>Made with ♥ in 🇩🇪</div>
   </footer>
   </main>
 </div>

@@ -25,10 +25,7 @@ Browse on purpose, not on autopilot. Gentle friction against doomscrolling, tab 
 **Kurzbeschreibung, DE:**
 Surf mit Absicht, nicht auf Autopilot. Sanfte Bremsen gegen Doomscrolling, Tab-Spiralen und Kurzvideos. Nur lokal, ohne Konto.
 
-**Description:** the English and German texts in [store-listing.md](store-listing.md). For the current version, add this line under “Also included” / „Außerdem dabei“:
-
-- EN: `Proxy and unblocked-games sites are recognised by how they are built, also inside frames`
-- DE: `Proxy- und Unblocked-Games-Seiten werden an ihrem Aufbau erkannt, auch in eingebetteten Fenstern`
+**Description:** the English and German texts in [store-listing.md](store-listing.md).
 
 **Category:** Productivity (Chrome: “Productivity → Workflow & planning”; AMO: “Productivity” and “Privacy & Security”)
 

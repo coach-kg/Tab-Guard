@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.37.0
+- **Waiting room for sites.** Sites on this list open only after a short wait (20 s by default) on a calm page with one question: what for? Then they stay free for a while (15 min). The wait is timed in the background, so it can't be skipped in the inspector. Applies during a pause too; removing a site or shortening the wait takes effect after an hour.
+- **Introduction** after installing, in four steps: what Tab Guard does, trusted sites and streaming services, content filter and waiting room, settings lock. It can be opened again from the settings; then loosening choices wait an hour as usual.
+- **Several imported lists.** Add as many Cold Turkey or hosts files as you like; each one is listed with its counts and can be removed on its own (after an hour) or kept after all. The lists live in Tab Guard: deleting the file on your computer changes nothing.
+- **Settings, new layout and names.** Five groups (Basics · Blocking & filters · Interrupting autopilot · Calmer media · Safeguards & backup), each section a card with a readable heading. Clearer names in all languages, e.g. Tab brake, Feed brake, Stimulus dimmer, Strict night mode, Short-video filter, Full-site blur. The side list always marks the section you're on, also at the end of the page, and scrolls along. Works on phones.
+- Lists have one small sort button in the corner that switches between as entered, A–Z and Z–A. Sorting only changes the view.
+- Notes like “loosening takes effect after an hour” appear right where the change was made.
+- Footer: “Made with ♥ in 🇩🇪”.
+- Fix (from 1.36.0): saving the settings for the first time no longer holds the built-in trusted sites back for an hour.
+
 ## 1.36.1
 - **“Leave site?” can't keep a blocked page open.** If a page holds its tab with that question and you answer “stay”, the tab is replaced by the block screen anyway.
 - Block screen: clearer texts (“Proxy-Seite gesperrt” / “Proxy site blocked”), the nudge in bold with one of two questions (“Was war das?” / “Wofür war das?”), and the hint on how to unblock only where it applies, and correct about the code and the one-hour wait.
