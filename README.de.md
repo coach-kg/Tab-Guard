@@ -22,29 +22,30 @@ Für Köpfe, die ständig den nächsten Reiz suchen.
 
 ## Was es macht
 
-- **Feed zu Reibung:** Nach einer Seite eines Endlos-Feeds warten weitere Beiträge hinter einem Button mit kurzem Countdown.
-- **Tab-Schutzschalter:** Vier Tabs derselben Seite in 90 Sekunden lösen eine Atempause aus, sieben in fünf Minuten sperren die Seite für 30 Minuten. Danach landest du genau dort, wo du hinwolltest.
-- **Atempause und Absicht:** ein Atemzug, dann eine Frage: Was hast du hier vor? Ein klares Wort reicht.
-- **Eskalationsleiter:** Je länger du auf beobachteten Seiten hängen bleibst, desto grauer und unschärfer werden Bilder, bis hin zur Sperre. Der Druck lässt von selbst nach.
-- **Short-Form-Filter:** blendet Hochkant-Kurzvideos aus oder verwischt sie, auch in eingebetteten Playern, ebenso `/shorts/`- und `/reels/`-Seiten. Querformat-Videos bleiben unberührt.
+- **Feed-Bremse:** Nach einer Seite eines Endlos-Feeds warten weitere Beiträge hinter einem Button mit kurzem Countdown.
+- **Tab-Bremse:** Vier Tabs derselben Seite in 90 Sekunden lösen eine Atempause aus, sieben in fünf Minuten sperren die Seite für 30 Minuten. Danach landest du genau dort, wo du hinwolltest.
+- **Atempause und Intention:** ein Atemzug, dann eine Frage: Was hast du hier vor? Ein klares Wort reicht.
+- **Wartezimmer für Seiten:** Seiten, die du auswählst, öffnen erst nach einer kurzen Wartezeit mit einer Frage und sind danach eine Weile frei.
+- **Reiz-Dimmer:** Je länger du auf beobachteten Seiten hängen bleibst, desto grauer und unschärfer werden Bilder, bis hin zur Sperre. Der Druck lässt von selbst nach.
+- **Kurzvideo-Filter:** blendet Hochkant-Kurzvideos aus oder verwischt sie, auch in eingebetteten Playern, ebenso `/shorts/`- und `/reels/`-Seiten. Querformat-Videos bleiben unberührt.
 - **Ruhige Ansicht:** Bilder im Popup auf grau oder unscharf stellen, mit Ausnahmen pro Seite. Kurz mit der Maus darauf zeigen, um eins zu sehen.
 - **Vorschau-Videos:** stoppt Hover-Vorschauen und hält animierte GIFs beim ersten Bild an.
 - **Jugendschutz:** erkennt Adult-Seiten an ihrem Inhalt, sperrt sie und erzwingt SafeSearch bei Google, Bing, DuckDuckGo, Brave, Yahoo und SearXNG. Proxy- und Unblocked-Games-Seiten erkennt er an ihrem Aufbau und sperrt sie; auf YouTube blendet er Anleitungen zum Umgehen von Filtern aus.
-- **Blockliste, Import, Weiterleitungen:** eigene Blockliste, importierte Listen (z. B. aus Cold Turkey) und Weiterleitungen wie reddit.com → eine ruhigere Oberfläche.
+- **Sperrliste, Importe, Umleitungen:** eigene Sperrliste, beliebig viele importierte Listen (z. B. aus Cold Turkey) und Umleitungen wie reddit.com → eine ruhigere Oberfläche.
 - **Notausgänge mit kleinem Preis:** Pausieren und Zurücksetzen warten jedes Mal etwas länger, mit einem Tagesbudget, das du festlegst.
 - **Nie gesperrt:** Hilfe-, Gesundheits- und Behördenseiten werden nie gesperrt oder gebremst. Einmal am Tag gibt es 20 Minuten Notfallzugang zu einer gesperrten Seite.
 
 ### Erkennt von selbst, was dich reinzieht
 
-Nicht alles hängt an einer Blockliste. Jede Seite, die du nicht als vertraut markiert hast, gilt als *beobachtet*, und Tab Guard erkennt Endlos-Feeds, Kurzvideos und Adult-Seiten an dem, was auf der Seite ist. So fallen neue Seiten oder Umwege um deine Blockliste oft trotzdem auf.
+Nicht alles hängt an einer Sperrliste. Jede Seite, die du nicht als vertraut markiert hast, gilt als *beobachtet*, und Tab Guard erkennt Endlos-Feeds, Kurzvideos und Adult-Seiten an dem, was auf der Seite ist. So fallen neue Seiten oder Umwege um deine Sperrliste oft trotzdem auf.
 
 ### Regeln, die du festlegst und die halten
 
 Du bestimmst, was vertraut, beobachtet oder gesperrt ist. Arbeit, Fachsuche und die Streamingdienste, die du auswählst, bleiben unberührt.
 
-- **Lockern wartet eine Stunde.** Ausschalten, mehr Budget oder eine Seite von der Blockliste nehmen greift erst eine Stunde nach dem Speichern. Verschärfungen gelten sofort.
+- **Lockern wartet eine Stunde.** Ausschalten, mehr Budget oder eine Seite von der Sperrliste nehmen greift erst eine Stunde nach dem Speichern. Verschärfungen gelten sofort.
 - **Einstellungssperre.** Auf Wunsch musst du vorher einen angezeigten Code von Hand abtippen (Einfügen geht nicht).
-- **Pause-Button.** Schaltet die Bremsen eine Weile ab. Blockliste, Jugendschutz und Weiterleitungen bleiben aktiv.
+- **Pause-Button.** Schaltet die Bremsen eine Weile ab. Sperrliste, Jugendschutz und Umleitungen bleiben aktiv.
 
 ## Privat von Grund auf
 

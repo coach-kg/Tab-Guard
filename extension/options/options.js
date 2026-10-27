@@ -1,6 +1,6 @@
 import { t, apply, resolve } from "../assets/i18n.js";
 import { initPreviews, relabelPreviews } from "./preview.js";
-import { IMPORT_KEY, IMPORT_NEXT_KEY, parseImport, importStats, mergeImports } from "../src/importList.js";
+import { LISTS_KEY, parseImport, importStats, migrateImports } from "../src/importList.js";
 import { holdLoosening, withPendingShown, pendingAt, LOOSEN_DELAY } from "../src/loosen.js";
 import { ESSENTIAL_SUFFIXES, ESSENTIAL_HOSTS } from "../src/essential.js";
 
@@ -28,6 +28,7 @@ const DEFAULTS = {
   escalation: { enabled: true, decayMinutes: 25, stages: { grey: 20, blur: 50, block: 80 }, maxBlurPx: 12, baseRevealSeconds: 2, maxRevealSeconds: 12 },
   mediaDwell: { enabled: true, idleSeconds: 2.5, tickSeconds: 3 },
   searchChurn: { enabled: true, count: 6, seconds: 60 },
+  waitRoom: { enabled: true, hosts: [], seconds: 20, openMinutes: 15 },
   lateNight: { enabled: true, start: "23:00", end: "05:00" },
   disableFrictionSeconds: 30,
   autoResumeMinutes: 30,
@@ -97,6 +98,9 @@ async function load() {
   $("dwellOn").checked = !!md.enabled; $("dwellIdle").value = md.idleSeconds;
   $("churnOn").checked = !!sc.enabled; $("churnCount").value = sc.count; $("churnSec").value = sc.seconds;
   $("lnOn").checked = !!ln.enabled; $("lnStart").value = ln.start; $("lnEnd").value = $("exDayStart").value || ln.end;
+  const wr = { ...DEFAULTS.waitRoom, ...(c.waitRoom || {}) };
+  $("wrOn").checked = wr.enabled !== false; $("wrSec").value = wr.seconds; $("wrOpen").value = wr.openMinutes;
+  $("wrHosts").value = (wr.hosts || []).join("\n");
   $("friction").value = c.disableFrictionSeconds;
   $("autoResume").value = c.autoResumeMinutes ?? 30;
   $("language").value = c.language || "auto";
@@ -115,24 +119,41 @@ function keepOrder(id, list) {
   return [...new Set([...known, ...list.filter(x => !pos.has(x))])];
 }
 const ordered = (id) => keepOrder(id, lines($(id).value));
+// One small button in the corner of the list: each click switches the view
+// (as entered → A–Z → Z–A → as entered). The icon shows the current view.
+const SORT_ICONS = {
+  entered: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 6h10M10 12h10M10 18h10"/><path d="M4 5.5h1.5v4M4 9.5h3M4 15h3l-3 3.5h3"/></svg>',
+  az: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l2.5-6 2.5 6M4.8 8h3.4M4 14h5l-5 6h5"/><path d="M17 4v16M13.5 16.5L17 20l3.5-3.5"/></svg>',
+  za: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h5l-5 6h5M4 20l2.5-6 2.5 6M4.8 18h3.4"/><path d="M17 4v16M13.5 16.5L17 20l3.5-3.5"/></svg>',
+};
+const SORT_NEXT = { entered: "az", az: "za", za: "entered" };
+const SORT_KEY = { entered: "o_sort_entered", az: "o_sort_az", za: "o_sort_za" };
 function sortBar(id) {
-  const ta = $(id); if (!ta || ta.previousElementSibling?.classList?.contains("sortbar")) return;
-  const bar = document.createElement("div"); bar.className = "sortbar";
-  bar.style.cssText = "display:flex;gap:6px;justify-content:flex-end;margin:6px 0 -2px";
+  const ta = $(id); if (!ta || ta.parentElement.classList.contains("ta-wrap")) return;
+  const wrap = document.createElement("div"); wrap.className = "ta-wrap";
+  ta.parentNode.insertBefore(wrap, ta); wrap.appendChild(ta);
+  const b = document.createElement("button"); b.type = "button"; b.className = "sortbtn"; b.dataset.mode = "entered";
   const raw = (v) => v.split("\n").map(x => x.trim()).filter(Boolean);
-  for (const [k, fn] of [["o_sort_entered", null], ["o_sort_az", (a, b) => a.localeCompare(b)], ["o_sort_za", (a, b) => b.localeCompare(a)]]) {
-    const b = document.createElement("button"); b.type = "button"; b.className = "mini-btn"; b.setAttribute("data-i18n", k);
-    b.textContent = t(LANG, k);
-    b.addEventListener("click", () => {
-      const cur = raw(ta.value);
-      if (!LIST_ORDER[id]) LIST_ORDER[id] = lines(ta.value);
-      ta.value = (fn ? [...cur].sort(fn) : keepOrder(id, cur.map(x => x.toLowerCase().replace(/^www\./, "")))).join("\n");
-      bar.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
-    });
-    bar.appendChild(b);
-  }
-  ta.parentNode.insertBefore(bar, ta);
+  const show = () => {
+    const m = b.dataset.mode;
+    setHTML(b, SORT_ICONS[m]);
+    const label = t(LANG, "o_sort_title", { now: t(LANG, SORT_KEY[m]), next: t(LANG, SORT_KEY[SORT_NEXT[m]]) });
+    b.title = label; b.setAttribute("aria-label", label);
+  };
+  b.addEventListener("click", () => {
+    if (!LIST_ORDER[id]) LIST_ORDER[id] = lines(ta.value);
+    const m = SORT_NEXT[b.dataset.mode]; b.dataset.mode = m;
+    const cur = raw(ta.value);
+    ta.value = (m === "az" ? [...cur].sort((x, y) => x.localeCompare(y)) : m === "za" ? [...cur].sort((x, y) => y.localeCompare(x))
+      : keepOrder(id, cur.map(x => x.toLowerCase().replace(/^www\./, "")))).join("\n");
+    show();
+  });
+  b.__show = show;
+  show();
+  wrap.appendChild(b);
 }
+function relabelSort() { document.querySelectorAll(".sortbtn").forEach(b => b.__show && b.__show()); }
+function setHTML(el, html) { const d = new DOMParser().parseFromString(html, "image/svg+xml"); el.replaceChildren(document.importNode(d.documentElement, true)); }
 
 let editingUnlocked = false;
 
@@ -197,6 +218,8 @@ async function save() {
   c.mediaDwell = { enabled: $("dwellOn").checked, idleSeconds: +$("dwellIdle").value, tickSeconds: 3 };
   c.searchChurn = { enabled: $("churnOn").checked, count: +$("churnCount").value, seconds: +$("churnSec").value };
   c.lateNight = { enabled: $("lnOn").checked, start: $("lnStart").value, end: $("lnEnd").value || "05:00" };
+  c.waitRoom = { enabled: $("wrOn").checked, seconds: Math.max(5, Math.min(300, Math.round(+$("wrSec").value || 20))),
+    openMinutes: Math.max(1, Math.min(240, Math.round(+$("wrOpen").value || 15))), hosts: ordered("wrHosts") };
   c.disableFrictionSeconds = +$("friction").value;
   c.autoResumeMinutes = +$("autoResume").value;
   c.language = $("language").value || "auto";
@@ -296,7 +319,7 @@ async function submitGate() {
 }
 
 // on/off state labels next to toggles
-const TOGGLES = ["adultBypass", "sfPrePlay", "sfSwipe", "adultSafe", "pvSwap", "exOn", "exGrey", "adultSearch", "adultGrey", "pvOn", "pvGifs", "pvAll", "adultDetect", "proxyOn", "escOn", "dwellOn", "churnOn", "lnOn", "lockReset", "autoBlock", "adult", "intentOn", "srcOn", "sfOn", "sfPortrait", "sfBlockUrls", "fbAll", "fbLinks", "revealOn", "pgOn"];
+const TOGGLES = ["wrOn", "adultBypass", "sfPrePlay", "sfSwipe", "adultSafe", "pvSwap", "exOn", "exGrey", "adultSearch", "adultGrey", "pvOn", "pvGifs", "pvAll", "adultDetect", "proxyOn", "escOn", "dwellOn", "churnOn", "lnOn", "lockReset", "autoBlock", "adult", "intentOn", "srcOn", "sfOn", "sfPortrait", "sfBlockUrls", "fbAll", "fbLinks", "revealOn", "pgOn"];
 
 // ---- export / import --------------------------------------------------------
 async function exportSettings() {
@@ -372,12 +395,12 @@ $("gateSubmit")?.addEventListener("click", submitGate);
 $("gatePass")?.addEventListener("keydown", (e) => { if (e.key === "Enter") submitGate(); });
 if (window.TGLock) window.TGLock.hardenInput($("gatePass"));
 
-for (const id of ["allowlist", "academic", "blocklist", "adultLearned", "bypassSites", "adultTerms", "essentialExtra", "streaming", "fullBlur", "pgHosts"]) sortBar(id);
+for (const id of ["allowlist", "academic", "blocklist", "adultLearned", "bypassSites", "adultTerms", "essentialExtra", "streaming", "fullBlur", "pgHosts", "wrHosts"]) sortBar(id);
 
 // ---- loosening waits an hour: notes under the affected sections -------------
 function renderPending(c) {
   const fmt = (at) => new Date(at).toLocaleTimeString(resolve(LANG), { hour: "2-digit", minute: "2-digit" });
-  for (const [id, paths] of [["exPending", ["exits", "lateNight"]], ["adultPending", ["adultBlock"]], ["blockPending", ["blocklist"]], ["essPending", ["essentialExtra"]], ["allowPending", ["allowlist"]], ["academicPending", ["academicSearch"]], ["streamPending", ["streamingHosts"]]]) {
+  for (const [id, paths] of [["exPending", ["exits", "lateNight"]], ["adultPending", ["adultBlock"]], ["blockPending", ["blocklist"]], ["essPending", ["essentialExtra"]], ["allowPending", ["allowlist"]], ["academicPending", ["academicSearch"]], ["streamPending", ["streamingHosts"]], ["wrPending", ["waitRoom"]]]) {
     const el = $(id); if (!el) continue;
     const at = pendingAt(c, paths);
     el.textContent = at ? t(LANG, "o_ex_pending", { t: fmt(at) }) : "";
@@ -396,44 +419,59 @@ for (const [a, b] of [["exDayStart", "lnEnd"], ["lnEnd", "exDayStart"]]) {
 // every other loosening: a replacement applies on top at once (both lists
 // count) and the old one drops out after the hour; a removal just waits.
 async function renderImport() {
-  const g = await chrome.storage.local.get([IMPORT_KEY, IMPORT_NEXT_KEY]);
-  const d = g[IMPORT_KEY], next = g[IMPORT_NEXT_KEY];
-  const st = importStats(d);
+  const store = await migrateImports(chrome.storage.local);
+  const box = $("lists"); if (!box) return;
   const fmt = (at) => new Date(at).toLocaleTimeString(resolve(LANG), { hour: "2-digit", minute: "2-digit" });
-  const has = st && (st.hosts || st.paths || st.patterns);
-  $("ctStats").textContent = !has ? t(LANG, "o_ct_none")
-    : (d.name ? d.name + " · " : "") + t(LANG, "o_ct_stats", { h: st.hosts, p: st.paths, w: st.patterns, q: st.searches });
-  const pend = $("ctPending");
-  if (next && next.at > Date.now()) {
-    pend.textContent = t(LANG, next.data ? "o_ct_swapAt" : "o_ct_removeAt", { t: fmt(next.at) });
-    pend.style.display = "";
-  } else { pend.textContent = ""; pend.style.display = "none"; }
-  $("ctRemove").style.display = has && !(next && !next.data) ? "" : "none";
+  box.replaceChildren();
+  const lists = store.lists || [];
+  if (!lists.length) { const e = document.createElement("div"); e.className = "empty"; e.textContent = t(LANG, "o_ct_none"); box.appendChild(e); return; }
+  for (const l of lists) {
+    const st = importStats(l.data) || { hosts: 0, paths: 0, patterns: 0, searches: 0 };
+    const row = document.createElement("div"); row.className = "li";
+    const left = document.createElement("div");
+    const nm = document.createElement("div"); nm.className = "nm"; nm.textContent = l.name || "Import";
+    const sub = document.createElement("div"); sub.className = "st"; sub.textContent = t(LANG, "o_ct_stats", { h: st.hosts, p: st.paths, w: st.patterns, q: st.searches });
+    left.append(nm, sub);
+    if (l.removeAt && l.removeAt > Date.now()) { const pd = document.createElement("div"); pd.className = "pd"; pd.textContent = t(LANG, "o_ct_removeAt", { t: fmt(l.removeAt) }); left.appendChild(pd); }
+    const btn = document.createElement("button"); btn.type = "button"; btn.className = "mini-btn" + (l.removeAt ? "" : " danger");
+    btn.textContent = t(LANG, l.removeAt ? "o_b_ctKeep" : "o_b_ctRemove");
+    btn.addEventListener("click", () => (l.removeAt ? keepImport(l.id) : removeImport(l.id)));
+    row.append(left, btn); box.appendChild(row);
+  }
 }
-async function importBlockFile(file) {
-  try {
-    const text = await file.text();
-    const d = parseImport(text);
-    if (!d.hosts.length && !d.prefixes.length && !d.patterns.length) throw new Error("empty");
-    d.name = String(file.name || "").slice(0, 80); d.at = Date.now();
-    const cur = (await chrome.storage.local.get(IMPORT_KEY))[IMPORT_KEY];
-    if (!cur) await chrome.storage.local.set({ [IMPORT_KEY]: d });          // nothing to loosen
-    else await chrome.storage.local.set({ [IMPORT_KEY]: mergeImports(cur, d), [IMPORT_NEXT_KEY]: { data: d, at: Date.now() + LOOSEN_DELAY } });
-  } catch (_) { $("ctStats").textContent = t(LANG, "o_importFail"); return; }
+async function importBlockFiles(files) {
+  const store = await migrateImports(chrome.storage.local);
+  const lists = [...(store.lists || [])];
+  let bad = 0;
+  for (const file of files) {
+    try {
+      const d = parseImport(await file.text());
+      if (!d.hosts.length && !d.prefixes.length && !d.patterns.length) { bad++; continue; }
+      lists.push({ id: Math.random().toString(36).slice(2, 10), name: String(file.name || "Import").slice(0, 80), at: Date.now(), data: d });
+    } catch (_) { bad++; }
+  }
+  await chrome.storage.local.set({ [LISTS_KEY]: { lists } });      // adding is tightening: at once
+  const m = $("ctMsg"); m.textContent = bad ? t(LANG, "o_importFail") : ""; m.style.display = bad ? "" : "none";
   renderImport();
 }
-async function removeImport() {
+async function removeImport(id) {
   // removing weakens protection → behind the settings lock like any change, and it waits an hour
   const lock = (await chrome.storage.local.get(KEY))[KEY]?.lock;
   if (lock?.enabled && !editingUnlocked) { openGate("change"); return; }
-  const next = (await chrome.storage.local.get(IMPORT_NEXT_KEY))[IMPORT_NEXT_KEY];
-  const at = next && !next.data && next.at > Date.now() ? next.at : Date.now() + LOOSEN_DELAY;
-  await chrome.storage.local.set({ [IMPORT_NEXT_KEY]: { data: null, at } });
+  const store = await migrateImports(chrome.storage.local);
+  const lists = (store.lists || []).map(l => l.id === id ? { ...l, removeAt: l.removeAt || Date.now() + LOOSEN_DELAY } : l);
+  await chrome.storage.local.set({ [LISTS_KEY]: { lists } });
+  renderImport();
+}
+async function keepImport(id) {
+  const store = await migrateImports(chrome.storage.local);
+  const lists = (store.lists || []).map(l => { if (l.id !== id) return l; const { removeAt, ...rest } = l; return rest; });
+  await chrome.storage.local.set({ [LISTS_KEY]: { lists } });
   renderImport();
 }
 $("ctPick")?.addEventListener("click", () => $("ctFile").click());
-$("ctFile")?.addEventListener("change", (e) => { const f = e.target.files[0]; if (f) importBlockFile(f); e.target.value = ""; });
-$("ctRemove")?.addEventListener("click", removeImport);
+$("ctFile")?.addEventListener("change", (e) => { const f = [...e.target.files]; if (f.length) importBlockFiles(f); e.target.value = ""; });
+setInterval(() => { if (document.visibilityState === "visible") renderImport(); }, 30000);
 
 // ---- built-in term list: deliberately awkward to open ---------------------
 // The words themselves can pull you in, so the list sits behind a sentence
@@ -489,13 +527,29 @@ function buildNav() {
   });
   if (spyObs) spyObs.disconnect();
   const links = [...nav.querySelectorAll("a")];
+  // the side list scrolls along, so the marked entry is always in view
+  const follow = () => { const a = nav.querySelector("a.active"); if (!a) return;
+    const r = a.getBoundingClientRect(), n = nav.getBoundingClientRect();
+    if (r.top < n.top + 30 || r.bottom > n.bottom - 30) nav.scrollTo({ top: a.offsetTop - nav.clientHeight / 2, behavior: "smooth" }); };
   spyObs = new IntersectionObserver(es => {
-    es.forEach(e => { if (e.isIntersecting) { links.forEach(l => l.classList.toggle("active", l.dataset.target === e.target.id)); if (jump) jump.value = e.target.id; } });
+    es.forEach(e => { if (e.isIntersecting) { links.forEach(l => l.classList.toggle("active", l.dataset.target === e.target.id)); if (jump) jump.value = e.target.id; follow(); } });
   }, { rootMargin: "-8% 0px -82% 0px", threshold: 0 });
   main.querySelectorAll("section[id]").forEach(s => spyObs.observe(s));
+  // at the very end the last sections can't scroll to the top: mark them by position
+  const mark = (id) => { links.forEach(l => l.classList.toggle("active", l.dataset.target === id)); if (jump) jump.value = id; follow(); };
+  links.forEach(l => l.addEventListener("click", () => setTimeout(() => mark(l.dataset.target), 60)));
+  if (!window.__tgSpyEnd) {
+    window.__tgSpyEnd = true;
+    window.addEventListener("scroll", () => {
+      if (window.innerHeight + window.scrollY < document.documentElement.scrollHeight - 4) return;
+      const secs = [...main.querySelectorAll("section[id]")];
+      const vis = secs.filter(s => s.getBoundingClientRect().top < window.innerHeight * 0.8);
+      const last = vis[vis.length - 1]; if (last) mark(last.id);
+    }, { passive: true });
+  }
 }
 
-$("language")?.addEventListener("change", () => { LANG = $("language").value || "auto"; apply(document, LANG); relabelPreviews(LANG); buildNav(); });
+$("language")?.addEventListener("change", () => { LANG = $("language").value || "auto"; apply(document, LANG); relabelPreviews(LANG); buildNav(); relabelSort(); renderImport(); });
 
 // ---- OPTIONAL, EXPERIMENTAL: Touch Grass link (see src/touchGrass.js) ----
 // Switching it on asks the browser for the optional nativeMessaging

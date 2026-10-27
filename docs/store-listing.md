@@ -23,7 +23,9 @@ Rules you set, and that hold
 You decide what is trusted, watched or blocked. Work, academic search and the streaming services you choose are left alone. Loosening a rule takes effect after one hour, so a weak moment can't undo a good decision. An optional lock asks you to type a code by hand first. Need a break from it all? The pause button switches the friction off for a while.
 
 Also included
-- Import block lists (e.g. from Cold Turkey)
+- A waiting room: sites you pick open only after a short wait with one question
+- Proxy and unblocked-games sites are recognised by how they are built, also inside frames
+- Import as many block lists as you like (e.g. from Cold Turkey)
 - Export and import your settings
 
 Private by design
@@ -55,7 +57,9 @@ Regeln, die du festlegst und die halten
 Du bestimmst, was vertraut, beobachtet oder gesperrt ist. Arbeit, Fachsuche und die Streamingdienste, die du auswählst, bleiben unberührt. Lockerst du eine Regel, greift das erst nach einer Stunde. So macht ein schwacher Moment keine gute Entscheidung rückgängig. Eine optionale Sperre lässt dich vorher einen Code von Hand abtippen. Und wenn du mal Ruhe willst, schaltet der Pause-Button die Bremsen eine Weile ab.
 
 Außerdem dabei
-- Sperrlisten importieren (z. B. aus Cold Turkey)
+- Ein Wartezimmer: Seiten, die du auswählst, öffnen erst nach einer kurzen Wartezeit mit einer Frage
+- Proxy- und Unblocked-Games-Seiten werden an ihrem Aufbau erkannt, auch in eingebetteten Fenstern
+- Beliebig viele Sperrlisten importieren (z. B. aus Cold Turkey)
 - Einstellungen exportieren und importieren
 
 Privat von Grund auf

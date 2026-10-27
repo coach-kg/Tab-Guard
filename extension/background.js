@@ -13,7 +13,7 @@ import { hostFromUrl, isAllowlisted, isSystemUrl, normalizeHost, makeHostMatcher
 import { isAdultHost } from "./src/adultList.js";
 import "./src/adultSignals.js";            // plain script: sets globalThis.TGAdultSignals
 import { t as i18nT } from "./assets/i18n.js";
-import { IMPORT_KEY, IMPORT_NEXT_KEY, makeImportMatcher, parseImport } from "./src/importList.js";
+import { IMPORT_KEY, IMPORT_NEXT_KEY, LISTS_KEY, makeImportMatcher, parseImport, listsMerged, dueLists, migrateImports } from "./src/importList.js";
 import "./src/bypass.js";                  // plain script: sets self.TGBypass
 import { applyDue } from "./src/loosen.js";
 import { isEssentialHost } from "./src/essential.js";
@@ -34,6 +34,27 @@ let mImport = null;                        // imported block list (Cold Turkey e
 const PRESSURE_KEY = "tabguardPressureState";
 
 let mFullBlur = null;
+// ---- waiting room ---------------------------------------------------------------
+// Sites on this list open only after a short wait on a calm page with one
+// question. Once through, the site is free for a while (openMinutes). The wait
+// is timed here, not in the page, so it can't be skipped in the inspector.
+const WAIT_KEY = "tabguardWaitPass";
+let waitPass = {};                         // listed entry → free until (ms)
+const waitStart = new Map();               // tabId → { entry, at }
+function waitCfg() { return { ...DEFAULT_CONFIG.waitRoom, ...(cfg.waitRoom || {}) }; }
+function waitEntry(host) {
+  const w = waitCfg(); if (!w.enabled || !host) return null;
+  const h = normalizeHost(host);
+  for (const raw of w.hosts || []) { const e = normalizeHost(raw); if (e && (h === e || h.endsWith("." + e))) return e; }
+  return null;
+}
+function waitNeeded(host) { const e = waitEntry(host); return e && !((waitPass[e] || 0) > Date.now()) ? e : null; }
+async function sendToWaitRoom(tabId, host, entry, toUrl) {
+  waitStart.set(tabId, { entry, at: Date.now() });
+  const url = chrome.runtime.getURL("pages/waitroom.html") + `?host=${encodeURIComponent(host)}&url=${encodeURIComponent(toUrl || "")}`;
+  try { await chrome.tabs.update(tabId, { url }); } catch (_) {}
+}
+
 function buildMatchers(c) {
   mAllow = makeHostMatcher(c.allowlist);
   mAcademic = makeHostMatcher(c.academicSearch);
@@ -75,9 +96,10 @@ function ensureConfig() {
     initPromise = (async () => {
       const c = await loadConfig();
       const p = new PressureEngine(c);
-      const got = await chrome.storage.local.get([BREAKER_KEY, PRESSURE_KEY, IMPORT_KEY, EMERG_KEY]);
+      const got = await chrome.storage.local.get([BREAKER_KEY, PRESSURE_KEY, EMERG_KEY, WAIT_KEY]);
       if (got[EMERG_KEY]) emerg = { day: 0, grant: null, ...got[EMERG_KEY] };
-      try { mImport = makeImportMatcher(got[IMPORT_KEY]); } catch (_) { mImport = null; }
+      waitPass = got[WAIT_KEY] || {};
+      try { mImport = makeImportMatcher(listsMerged(await migrateImports(chrome.storage.local))); } catch (_) { mImport = null; }
       breaker.restore(got[BREAKER_KEY]);
       p.restore(got[PRESSURE_KEY]);
       buildMatchers(c);
@@ -100,11 +122,26 @@ async function persist() {
 startTouchGrassLink(() => !!(cfg && !cfg.enabled));
 
 chrome.runtime.onInstalled.addListener(ensureConfig);
+// a short introduction right after installing (not on updates)
+chrome.runtime.onInstalled.addListener((d) => {
+  if (d && d.reason === "install") chrome.tabs.create({ url: chrome.runtime.getURL("pages/welcome.html") }).catch(() => {});
+});
 chrome.runtime.onStartup.addListener(ensureConfig);
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "local" && changes[EMERG_KEY]) emerg = { day: 0, grant: null, ...(changes[EMERG_KEY].newValue || {}) };
-  if (area === "local" && changes[IMPORT_KEY]) {
-    try { mImport = makeImportMatcher(changes[IMPORT_KEY].newValue); } catch (_) { mImport = null; }
+  // an old single list written later (older settings file, older version): move it over
+  if (area === "local" && (changes[IMPORT_KEY] && changes[IMPORT_KEY].newValue)) {
+    (async () => {
+      const g = await chrome.storage.local.get([LISTS_KEY, IMPORT_KEY]);
+      const lists = [...((g[LISTS_KEY] && g[LISTS_KEY].lists) || [])];
+      const d = g[IMPORT_KEY];
+      if (d) lists.push({ id: Math.random().toString(36).slice(2, 10), name: d.name || "Import", at: Date.now(), data: { hosts: d.hosts || [], prefixes: d.prefixes || [], patterns: d.patterns || [] } });
+      await chrome.storage.local.set({ [LISTS_KEY]: { lists } });
+      await chrome.storage.local.remove([IMPORT_KEY, IMPORT_NEXT_KEY]);
+    })();
+  }
+  if (area === "local" && changes[LISTS_KEY]) {
+    try { mImport = makeImportMatcher(listsMerged(changes[LISTS_KEY].newValue)); } catch (_) { mImport = null; }
   }
   if (area === "local" && changes.tabguardConfig) {
     // Merge over the defaults, exactly as loadConfig() does at startup. Taking
@@ -369,6 +406,10 @@ chrome.tabs.onUpdated.addListener(async (tabId, info, tab) => {
   if ((info.status === "loading" || info.url) && !onCooldownPage && bypassBlocked(host, tab.url)) {
     return redirectToCooldown(tabId, host, "proxy", tab.url);
   }
+  if (info.status === "loading" && host && /^https?:/i.test(tab.url || "") && !essential(host)) {
+    const e = waitNeeded(host);
+    if (e) return sendToWaitRoom(tabId, host, e, tab.url);
+  }
   if (isWatched && info.status === "loading" && !onCooldownPage) {
     const ss = safeSearchUrl(tab.url);
     // loop guard: an engine that keeps dropping the parameter gets at most
@@ -557,19 +598,16 @@ async function exitStatus(host) {
 // Loosened settings (switching filters off, removing entries, gentler exits)
 // were saved as pending; once their hour is over they apply here.
 async function applyLoosening() {
-  const g = await chrome.storage.local.get(["tabguardConfig", IMPORT_NEXT_KEY]);
+  const g = await chrome.storage.local.get(["tabguardConfig", LISTS_KEY]);
   const r = applyDue(g.tabguardConfig || {});
   if (r.changed) {
     await chrome.storage.local.set({ tabguardConfig: r.config });
     cfg = { ...DEFAULT_CONFIG, ...r.config };                 // don't wait for onChanged
     buildMatchers(cfg);
   }
-  const next = g[IMPORT_NEXT_KEY];
-  if (next && next.at <= Date.now()) {
-    if (next.data) await chrome.storage.local.set({ [IMPORT_KEY]: next.data });
-    else await chrome.storage.local.remove(IMPORT_KEY);
-    await chrome.storage.local.remove(IMPORT_NEXT_KEY);
-  }
+  // imported lists whose removal hour is over
+  const due = dueLists(g[LISTS_KEY]);
+  if (due) await chrome.storage.local.set({ [LISTS_KEY]: due });
 }
 async function performExit(kind) {
   if (kind === "pause") {
@@ -750,6 +788,36 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           redirectToCooldown(tabId, host, "proxy");
         } else if (adult) { await rememberAdultHost(host); redirectToCooldown(tabId, host, "adult"); }
         return sendResponse({ adult, score: r.score, why: r.why });
+      }
+      case "WAITROOM_INFO": {
+        const w = waitCfg();
+        const st = waitStart.get(tabId);
+        const left = st ? Math.max(0, w.seconds * 1000 - (Date.now() - st.at)) : w.seconds * 1000;
+        return sendResponse({ seconds: w.seconds, openMinutes: w.openMinutes, leftMs: left, lang: cfg.language });
+      }
+      case "WAITROOM_PASS": {
+        // only after the wait has really passed, timed from when the tab came here
+        const w = waitCfg();
+        const st = waitStart.get(tabId);
+        const target = String(msg.url || "");
+        const h = hostFromUrl(target);
+        const e = waitEntry(h);
+        if (!st || !e || st.entry !== e || Date.now() - st.at < w.seconds * 1000 - 300) return sendResponse({ ok: false });
+        waitPass[e] = Date.now() + w.openMinutes * 60000;
+        for (const [k, v] of Object.entries(waitPass)) if (v < Date.now()) delete waitPass[k];
+        await chrome.storage.local.set({ [WAIT_KEY]: waitPass });
+        waitStart.delete(tabId);
+        try { await chrome.tabs.update(tabId, { url: target }); } catch (_) {}
+        return sendResponse({ ok: true });
+      }
+      case "WAITROOM_LEAVE": {
+        waitStart.delete(tabId);
+        try {
+          const all = await chrome.tabs.query({ windowId: sender.tab.windowId });
+          if (all.length > 1) await chrome.tabs.remove(tabId);
+          else await chrome.tabs.update(tabId, { url: "about:blank" });
+        } catch (_) {}
+        return sendResponse({});
       }
       case "I18N": {
         // short texts for the small frame script, in the chosen language

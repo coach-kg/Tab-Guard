@@ -137,6 +137,10 @@ export const DEFAULT_CONFIG = {
   // Late-night hard mode: interventions come sooner and pauses are longer
   lateNight: { enabled: true, start: "23:00", end: "05:00" },
 
+  // Waiting room: these sites open only after a short wait with one question,
+  // then stay free for a while. Also during a pause.
+  waitRoom: { enabled: true, hosts: [], seconds: 20, openMinutes: 15 },
+
   // Friction lock: seconds you must wait / hold before disabling an intervention
   disableFrictionSeconds: 30,
 
