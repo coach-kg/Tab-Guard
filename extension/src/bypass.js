@@ -223,12 +223,19 @@
     return { engine: f.engine, transport: f.transport, rewritten, store };
   }
   // The engines' own databases. Asynchronous; resolves to true or false.
+  // Never rejects: some frames (sandboxed, opaque origins) refuse the question.
   function engineDatabases(win) {
     win = win || self;
-    try {
-      if (!win.indexedDB || !win.indexedDB.databases) return Promise.resolve(false);
-      return win.indexedDB.databases().then(list => list.some(d => d && (d.name === "$scramjet" || d.name === "__op")), () => false);
-    } catch (_) { return Promise.resolve(false); }
+    return new Promise((resolve) => {
+      try {
+        if (!win.indexedDB || typeof win.indexedDB.databases !== "function" || !win.location || win.location.origin === "null") return resolve(false);
+        const done = setTimeout(() => resolve(false), 3000);
+        Promise.resolve(win.indexedDB.databases())
+          .then(list => resolve(Array.isArray(list) && list.some(d => d && (d.name === "$scramjet" || d.name === "__op"))))
+          .catch(() => resolve(false))
+          .finally(() => clearTimeout(done));
+      } catch (_) { resolve(false); }
+    });
   }
 
   self.TGBypass = { norm, score, isBypassLink, embeddedTarget, isProxyUrl, titleCloak, siteKey, paramTargets, isFramedProxy, looksLikeUrlBar, engineMarks, engineDatabases, fileHits };

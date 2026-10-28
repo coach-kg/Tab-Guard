@@ -8,7 +8,8 @@ Use this with the files in the kit zip: two packages, five screenshots and the i
 |---|---|
 | `tab-guard_vX.Y.Z-chrome.zip` | Chrome Web Store, Edge Add-ons, Opera: “Upload new package” |
 | `tab-guard_vX.Y.Z-firefox.zip` | addons.mozilla.org: “Upload a new version” (your existing listing; the package carries its add-on id) |
-| `screenshots/1-…5-*.png` (1280×800) | Screenshots, in this order |
+| `screenshots/1-…5-*.png` (1280×800) | Screenshots, in this order (English) |
+| `screenshots/de/1-…5-*.png` | The same in German: in the Chrome dashboard, switch the listing language to German and upload these there |
 | `icon.png` (128×128) | Store icon |
 | Privacy policy | `https://github.com/coach-kg/Tab-Guard/blob/main/tab-guard-PRIVACY.md` |
 | Homepage / support | `https://github.com/coach-kg/Tab-Guard` and `…/issues` |

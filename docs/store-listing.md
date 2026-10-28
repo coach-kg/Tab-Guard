@@ -1,5 +1,7 @@
 # Store listing
 
+Store descriptions name no other products or brands: the Chrome Web Store counts lists of names (search engines, sites) as keyword spam.
+
 ## English
 
 ```
@@ -15,8 +17,8 @@ What you get
 - Your evenings back. Endless feeds stop after one page. More posts wait behind a button with a short countdown, so you decide whether to go on.
 - No more tab spirals. Open the same site again and again, and Tab Guard asks for one breath and one question: what are you here for? Keep going, and the site locks for 30 minutes. When the lock ends, you land exactly where you were heading.
 - Less stimulation, less pull. The longer you linger on watched sites, the greyer and blurrier images get, up to a block. Step away, and the pressure eases off by itself.
-- Fewer traps. Shorts, Reels and autoplay previews are hidden or stopped. Reddit can open in a calmer front end.
-- Adult content kept out. Adult sites are recognised and blocked, and searches on Google, Bing, DuckDuckGo, Brave, Yahoo and SearXNG run with SafeSearch.
+- Fewer traps. Short vertical videos and autoplay previews are hidden or stopped. Busy sites can open in a calmer front end you choose.
+- Adult content kept out. Adult sites are recognised and blocked, and web searches run with SafeSearch.
 - A way out when you truly need one. Exits with a short, growing wait and a daily budget you set. Helplines, health and government sites are never blocked.
 
 Rules you set, and that hold
@@ -25,7 +27,7 @@ You decide what is trusted, watched or blocked. Work, academic search and the st
 Also included
 - A waiting room: sites you pick open only after a short wait with one question
 - Proxy and unblocked-games sites are recognised by how they are built, also inside frames
-- Import as many block lists as you like (e.g. from Cold Turkey)
+- Import as many block lists as you like, from other blockers or hosts files
 - Export and import your settings
 
 Private by design
@@ -49,8 +51,8 @@ Was du davon hast
 - Deine Abende zurück. Endlos-Feeds halten nach einer Seite an. Weitere Beiträge warten hinter einem Button mit kurzem Countdown, und du entscheidest, ob du weitermachst.
 - Schluss mit Tab-Spiralen. Öffnest du dieselbe Seite immer wieder, bittet Tab Guard um einen Atemzug und eine Frage: Was hast du hier vor? Machst du trotzdem weiter, wird die Seite für 30 Minuten gesperrt. Danach landest du genau dort, wo du hinwolltest.
 - Weniger Reiz, weniger Sog. Je länger du auf beobachteten Seiten hängen bleibst, desto grauer und unschärfer werden Bilder, bis hin zur Sperre. Gehst du weg, lässt der Druck von selbst nach.
-- Weniger Fallen. Shorts, Reels und automatisch startende Vorschauen werden ausgeblendet oder gestoppt. Reddit öffnet auf Wunsch in einer ruhigeren Oberfläche.
-- Kein Adult-Content. Adult-Seiten werden erkannt und gesperrt, Suchen bei Google, Bing, DuckDuckGo, Brave, Yahoo und SearXNG laufen mit SafeSearch.
+- Weniger Fallen. Hochkant-Kurzvideos und automatisch startende Vorschauen werden ausgeblendet oder gestoppt. Unruhige Seiten öffnen auf Wunsch in einer ruhigeren Oberfläche, die du wählst.
+- Kein Adult-Content. Adult-Seiten werden erkannt und gesperrt, Websuchen laufen mit SafeSearch.
 - Ein Ausweg, wenn du ihn wirklich brauchst. Notausgänge mit kurzer, wachsender Wartezeit und einem Tagesbudget, das du festlegst. Hilfe-, Gesundheits- und Behördenseiten werden nie gesperrt.
 
 Regeln, die du festlegst und die halten
@@ -59,7 +61,7 @@ Du bestimmst, was vertraut, beobachtet oder gesperrt ist. Arbeit, Fachsuche und 
 Außerdem dabei
 - Ein Wartezimmer: Seiten, die du auswählst, öffnen erst nach einer kurzen Wartezeit mit einer Frage
 - Proxy- und Unblocked-Games-Seiten werden an ihrem Aufbau erkannt, auch in eingebetteten Fenstern
-- Beliebig viele Sperrlisten importieren (z. B. aus Cold Turkey)
+- Beliebig viele Sperrlisten importieren, aus anderen Blockern oder Hosts-Dateien
 - Einstellungen exportieren und importieren
 
 Privat von Grund auf
