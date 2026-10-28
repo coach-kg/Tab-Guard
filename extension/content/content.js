@@ -1818,7 +1818,7 @@ setInterval(tgCheckGuards, 800);
   function bypassSiteCheck() {
     if (bsSent || !bpOn) return;
     const f = bsFeatures(); if (!f) return;
-    if (bsDbAsked < 6 && !bsDb) { bsDbAsked++; const lib = bpLib(); if (lib && lib.engineDatabases) lib.engineDatabases(window).then(y => { if (y && !bsDb) { bsDb = true; bypassSiteCheck(); } }); }
+    if (bsDbAsked < 6 && !bsDb) { bsDbAsked++; const lib = bpLib(); if (lib && lib.engineDatabases) lib.engineDatabases(window).then(y => { if (y && !bsDb) { bsDb = true; bypassSiteCheck(); } }).catch(() => {}); }
     if (f.score >= 5) {
       bsSent = true;
       const strong = f.why.some(w => /^(proxyUrl|proxyFrame|engine:|rewritten|engineStore|engineDb)/.test(w));

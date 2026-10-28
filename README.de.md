@@ -13,7 +13,7 @@
 <p align="center"><a href="README.md">English</a></p>
 
 <p align="center">
-  <img src="docs/screenshots/1-intention.png" width="760" alt="Tab Guard fragt: Was hast du hier vor?">
+  <img src="docs/screenshots/de/1-intention.png" width="760" alt="Tab Guard fragt: Was hast du hier vor?">
 </p>
 
 Tab Guard greift ein, wenn Surfen zum Autopiloten wird: der fünfte Tab derselben Seite, der Feed ohne Ende, das „nur noch ein Video“. Es stoppt dich mit einer bewussten Pause und einer Frage, macht Seiten reizärmer, je länger du bleibst, und sperrt, was du gar nicht sehen willst. Auf Seiten, denen du vertraust, hält es sich raus.

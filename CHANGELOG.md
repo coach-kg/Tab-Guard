@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.37.1
+- Store texts name no other products any more (the Chrome Web Store had flagged the list of search engines as keyword spam).
+- New store screenshots in English and German, from the current version: intention, detection, calmer pages, waiting room, rules and privacy.
+- Calm view in the popup: “Calm view · everywhere” and “Leave this site out”, so it's clear the switch is an exception for the open site.
+- No more “Uncaught (in promise)” in the console on pages with sandboxed frames: the proxy database check never rejects and only runs in frames of the same site.
+- Waiting room: no spell-check underline in the question field.
+
 ## 1.37.0
 - **Waiting room for sites.** Sites on this list open only after a short wait (20 s by default) on a calm page with one question: what for? Then they stay free for a while (15 min). The wait is timed in the background, so it can't be skipped in the inspector. Applies during a pause too; removing a site or shortening the wait takes effect after an hour.
 - **Introduction** after installing, in four steps: what Tab Guard does, trusted sites and streaming services, content filter and waiting room, settings lock. It can be opened again from the settings; then loosening choices wait an hour as usual.

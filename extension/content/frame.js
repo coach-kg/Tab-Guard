@@ -36,7 +36,11 @@
       const B = globalThis.TGBypass; if (!B || !B.engineMarks) return;
       const e = B.engineMarks(document, window);
       if (e.engine.length || e.rewritten || e.store) report();
-      if (engineLooks === 1 && B.engineDatabases) B.engineDatabases(window).then(y => { if (y) report(); });
+      if (engineLooks === 1 && B.engineDatabases) {
+        // only frames of the same site as the page (a proxy's own windows)
+        let same = false; try { same = window.top.location.origin === location.origin; } catch (_) {}
+        if (same) B.engineDatabases(window).then(y => { if (y) report(); }).catch(() => {});
+      }
     } catch (_) {}
   }
   // A browser inside the page: an address bar with back / forward / reload

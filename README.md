@@ -60,8 +60,8 @@ You decide what is trusted, watched or blocked. Work, academic search and the st
 - **Pause button.** Switches the friction off for a while. Blocklist, content filter and redirects stay on.
 
 <p align="center">
-  <img src="docs/screenshots/4-rules.png" width="49%" alt="Settings lock, loosening delay, SafeSearch, growing waits">
-  <img src="docs/screenshots/5-private.png" width="49%" alt="Private, free, no account">
+  <img src="docs/screenshots/4-waitroom.png" width="49%" alt="A waiting room: the site opens after a short wait and one question">
+  <img src="docs/screenshots/5-rules.png" width="49%" alt="Settings lock, loosening waits an hour, private by design">
 </p>
 
 ## Private by design
