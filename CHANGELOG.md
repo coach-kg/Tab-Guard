@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.37.2
+- **Stimulus dimmer, explained:** an example chart drawn with your settings (how scrolling, tab pauses and lingering raise the pressure, where grey, blur and block begin, how it cools off), the points each behaviour adds, and the half-life. New setting: how strongly behaviour counts (gentle · normal · strict); gentler waits an hour.
+- Waiting room: “free for 15 minutes” now says what it means: no new wait for 15 minutes.
+- Introduction: language switch in the top bar; language menus show flags.
+- Number fields no longer hide their value behind spinner arrows.
+- Side list in the settings: the current section is marked with a thin straight line, no rounded box.
+
 ## 1.37.1
 - Store texts name no other products any more (the Chrome Web Store had flagged the list of search engines as keyword spam).
 - New store screenshots in English and German, from the current version: intention, detection, calmer pages, waiting room, rules and privacy.

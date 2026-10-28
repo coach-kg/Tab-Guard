@@ -59,6 +59,14 @@ async function boot() {
   stored = (await chrome.storage.local.get(KEY))[KEY] || {};
   LANG = stored.language || "auto";
   apply(document, LANG);
+  // switch the language right here; it is saved at once (it loosens nothing)
+  $("lang").value = LANG;
+  $("lang").addEventListener("change", async () => {
+    LANG = $("lang").value || "auto";
+    const c = (await chrome.storage.local.get(KEY))[KEY] || {};
+    await chrome.storage.local.set({ [KEY]: { ...c, language: LANG } });
+    apply(document, LANG); go(step);
+  });
   const allow = stored.allowlist || ["mail.google.com", "calendar.google.com", "docs.google.com", "drive.google.com", "github.com", "gitlab.com", "stackoverflow.com", "claude.ai", "chatgpt.com", "notion.so", "linear.app", "figma.com", "wikipedia.org", "localhost"];
   const stream = stored.streamingHosts || ["netflix.com", "disneyplus.com", "primevideo.com", "arte.tv", "mediathek.ard.de", "zdf.de", "mubi.com", "criterionchannel.com"];
   const wait = (stored.waitRoom && stored.waitRoom.hosts) || [];

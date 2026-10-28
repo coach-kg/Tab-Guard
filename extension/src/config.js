@@ -93,6 +93,7 @@ export const DEFAULT_CONFIG = {
   escalation: {
     enabled: true,
     decayMinutes: 25,                       // how fast pressure cools off
+    sensitivity: 1,                         // how strongly behaviour counts (0.6 gentle · 1 · 1.5 strict)
     stages: { grey: 20, blur: 50, block: 80 },
     maxBlurPx: 12,                          // blur strength at the top of the range
     allowReveal: true,                      // show the "reveal" button (off = no peeking)

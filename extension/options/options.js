@@ -3,6 +3,7 @@ import { initPreviews, relabelPreviews } from "./preview.js";
 import { LISTS_KEY, parseImport, importStats, migrateImports } from "../src/importList.js";
 import { holdLoosening, withPendingShown, pendingAt, LOOSEN_DELAY } from "../src/loosen.js";
 import { ESSENTIAL_SUFFIXES, ESSENTIAL_HOSTS } from "../src/essential.js";
+import { PRESSURE_ADDS } from "../src/pressureEngine.js";
 
 const KEY = "tabguardConfig";
 const $ = (id) => document.getElementById(id);
@@ -94,6 +95,8 @@ async function load() {
   $("escOn").checked = !!esc.enabled; $("decay").value = esc.decayMinutes;
   $("sGrey").value = esc.stages.grey; $("sBlur").value = esc.stages.blur; $("sBlock").value = esc.stages.block;
   $("maxBlur").value = esc.maxBlurPx; $("revMin").value = esc.baseRevealSeconds; $("revMax").value = esc.maxRevealSeconds;
+  $("sens").value = String([0.6, 1, 1.5].reduce((a, b) => Math.abs(b - (+esc.sensitivity || 1)) < Math.abs(a - (+esc.sensitivity || 1)) ? b : a));
+  drawPressure();
   $("revealOn").checked = esc.allowReveal !== false;
   $("dwellOn").checked = !!md.enabled; $("dwellIdle").value = md.idleSeconds;
   $("churnOn").checked = !!sc.enabled; $("churnCount").value = sc.count; $("churnSec").value = sc.seconds;
@@ -209,7 +212,7 @@ async function save() {
   c.lockMinutes = +$("lock").value; c.ignoredBeforeCooldown = +$("ignored").value;
   c.intenseScore = +$("intense").value; c.watchAfterMinutes = +$("watchAfter").value; c.breathSeconds = +$("breath").value;
   c.escalation = {
-    enabled: $("escOn").checked, decayMinutes: +$("decay").value,
+    enabled: $("escOn").checked, decayMinutes: +$("decay").value, sensitivity: +$("sens").value || 1,
     stages: { grey: +$("sGrey").value, blur: +$("sBlur").value, block: +$("sBlock").value },
     maxBlurPx: +$("maxBlur").value, baseRevealSeconds: +$("revMin").value, maxRevealSeconds: +$("revMax").value,
     allowReveal: $("revealOn").checked,
@@ -400,7 +403,7 @@ for (const id of ["allowlist", "academic", "blocklist", "adultLearned", "bypassS
 // ---- loosening waits an hour: notes under the affected sections -------------
 function renderPending(c) {
   const fmt = (at) => new Date(at).toLocaleTimeString(resolve(LANG), { hour: "2-digit", minute: "2-digit" });
-  for (const [id, paths] of [["exPending", ["exits", "lateNight"]], ["adultPending", ["adultBlock"]], ["blockPending", ["blocklist"]], ["essPending", ["essentialExtra"]], ["allowPending", ["allowlist"]], ["academicPending", ["academicSearch"]], ["streamPending", ["streamingHosts"]], ["wrPending", ["waitRoom"]]]) {
+  for (const [id, paths] of [["exPending", ["exits", "lateNight"]], ["adultPending", ["adultBlock"]], ["blockPending", ["blocklist"]], ["essPending", ["essentialExtra"]], ["allowPending", ["allowlist"]], ["academicPending", ["academicSearch"]], ["streamPending", ["streamingHosts"]], ["wrPending", ["waitRoom"]], ["escPending", ["escalation"]]]) {
     const el = $(id); if (!el) continue;
     const at = pendingAt(c, paths);
     el.textContent = at ? t(LANG, "o_ex_pending", { t: fmt(at) }) : "";
@@ -549,7 +552,52 @@ function buildNav() {
   }
 }
 
-$("language")?.addEventListener("change", () => { LANG = $("language").value || "auto"; apply(document, LANG); relabelPreviews(LANG); buildNav(); relabelSort(); renderImport(); });
+// ---- the pressure, as a picture ------------------------------------------------
+// One example hour with the current settings: what raises the pressure, where
+// the stages begin, and how it cools off. Redrawn as you change the numbers.
+const SVGNS = "http://www.w3.org/2000/svg";
+function svgEl(tag, attrs, text) { const e = document.createElementNS(SVGNS, tag); for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v); if (text != null) e.textContent = text; return e; }
+function drawPressure() {
+  const box = $("pxChart"); if (!box) return;
+  const tau = Math.max(1, +$("decay").value || 25), k = +$("sens").value || 1;
+  const st = { grey: +$("sGrey").value || 20, blur: +$("sBlur").value || 50, block: +$("sBlock").value || 80 };
+  const add = Object.fromEntries(Object.entries(PRESSURE_ADDS).map(([n, v]) => [n, v * k]));
+  // the example: scrolling hard, a tab pause, a minute of GIFs, coming back twice, then away
+  const events = [[2, "scroll"], [5, "scroll"], [8, "scroll"], [10, "tabPause"], ...Array.from({ length: 6 }, (_, i) => [12 + i * 0.1, "dwell"]), [15, "revisit"], [17, "revisit"]];
+  const T = 60, step = 0.1, pts = []; let v = 0, ei = 0; const marks = [];
+  for (let t = 0; t <= T + 1e-9; t += step) {
+    v *= Math.exp(-step / tau);
+    while (ei < events.length && events[ei][0] <= t + 1e-9) { v = Math.min(100, v + add[events[ei][1]]); marks.push([t, v, events[ei][1]]); ei++; }
+    pts.push([t, v]);
+  }
+  const W = 640, H = 220, L = 34, R = 92, Tp = 10, B = 26, x = (t) => L + (t / T) * (W - L - R), y = (p) => Tp + (1 - p / 100) * (H - Tp - B);
+  const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": t(LANG, "o_px_title") });
+  const band = (from, to, fill) => svg.appendChild(svgEl("rect", { x: L, y: y(to), width: W - L - R, height: y(from) - y(to), fill }));
+  band(st.grey, st.blur, "rgba(160,170,190,.10)"); band(st.blur, st.block, "rgba(111,157,255,.12)"); band(st.block, 100, "rgba(251,113,133,.13)");
+  for (const [p, key, col] of [[st.grey, "o_px_grey", "#9aa3b6"], [st.blur, "o_px_blur", "#6f9dff"], [st.block, "o_px_block", "#fb7185"]]) {
+    svg.appendChild(svgEl("line", { x1: L, x2: W - R, y1: y(p), y2: y(p), stroke: col, "stroke-dasharray": "4 4", "stroke-width": 1, opacity: .8 }));
+    svg.appendChild(svgEl("text", { x: W - R + 8, y: y(p) + 4, fill: col, "font-size": 12 }, `${t(LANG, key)} · ${p}`));
+  }
+  for (const p of [0, 50, 100]) svg.appendChild(svgEl("text", { x: L - 8, y: y(p) + 4, fill: "#6a7284", "font-size": 11, "text-anchor": "end" }, String(p)));
+  for (const m of [0, 15, 30, 45, 60]) svg.appendChild(svgEl("text", { x: x(m), y: H - 8, fill: "#6a7284", "font-size": 11, "text-anchor": "middle" }, m === 60 ? `${m} ${t(LANG, "o_px_min")}` : String(m)));
+  svg.appendChild(svgEl("line", { x1: L, x2: W - R, y1: y(0), y2: y(0), stroke: "#2a3042" }));
+  const area = `M${x(0)},${y(0)} ` + pts.map(([a, b]) => `L${x(a).toFixed(1)},${y(b).toFixed(1)}`).join(" ") + ` L${x(T)},${y(0)} Z`;
+  svg.appendChild(svgEl("path", { d: area, fill: "rgba(111,157,255,.10)" }));
+  svg.appendChild(svgEl("path", { d: "M" + pts.map(([a, b]) => `${x(a).toFixed(1)},${y(b).toFixed(1)}`).join(" L"), fill: "none", stroke: "#e8ebf2", "stroke-width": 2, "stroke-linejoin": "round" }));
+  for (const [a, b, kind] of marks) { if (kind === "dwell" && a > 12.05) continue; const c = svgEl("circle", { cx: x(a), cy: y(b), r: 3.5, fill: "#e8ebf2" }); c.appendChild(svgEl("title", {}, t(LANG, "o_px_" + kind, { n: Math.round(add[kind]) }))); svg.appendChild(c); }
+  const head = document.createElement("p"); head.className = "t"; head.textContent = t(LANG, "o_px_title");
+  const desc = document.createElement("p"); desc.className = "d"; desc.textContent = t(LANG, "o_px_desc");
+  const ul = document.createElement("ul");
+  for (const kind of ["scroll", "tabPause", "tabLock", "dwell", "churn", "revisit"]) {
+    const li = document.createElement("li"); const b = document.createElement("b"); b.textContent = "+" + Math.round(add[kind]);
+    li.append(b, document.createTextNode(t(LANG, "o_pxl_" + kind))); ul.appendChild(li);
+  }
+  const dec = document.createElement("p"); dec.className = "dec"; dec.textContent = t(LANG, "o_px_decay", { m: Math.round(tau * Math.LN2) });
+  box.replaceChildren(head, desc, svg, ul, dec);
+}
+for (const id of ["decay", "sens", "sGrey", "sBlur", "sBlock"]) { $(id)?.addEventListener("input", drawPressure); $(id)?.addEventListener("change", drawPressure); }
+
+$("language")?.addEventListener("change", () => { LANG = $("language").value || "auto"; apply(document, LANG); relabelPreviews(LANG); buildNav(); relabelSort(); renderImport(); drawPressure(); });
 
 // ---- OPTIONAL, EXPERIMENTAL: Touch Grass link (see src/touchGrass.js) ----
 // Switching it on asks the browser for the optional nativeMessaging

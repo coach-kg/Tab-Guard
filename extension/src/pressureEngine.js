@@ -6,6 +6,8 @@
 // window and you climb the ladder; leave it alone and it cools off.
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+// what each kind of behaviour adds (0–100 scale), before the sensitivity
+export const PRESSURE_ADDS = { dwell: 8, scroll: 15, tabPause: 12, tabLock: 25, revisit: 4, churn: 6 };
 
 export class PressureEngine {
   constructor(cfg) {
@@ -21,7 +23,10 @@ export class PressureEngine {
     this.maxBlurPx = e.maxBlurPx || 12;
     this.baseRevealMs = (e.baseRevealSeconds || 2) * 1000;
     this.maxRevealMs = (e.maxRevealSeconds || 12) * 1000;
-    this.add = { dwell: 8, scroll: 15, tabPause: 12, tabLock: 25, revisit: 4, churn: 6, ...(e.add || {}) };
+    // how strongly behaviour counts: gentle 0.6 · normal 1 · strict 1.5
+    const k = Math.min(2, Math.max(0.3, +e.sensitivity || 1));
+    const base = { ...PRESSURE_ADDS, ...(e.add || {}) };
+    this.add = Object.fromEntries(Object.entries(base).map(([key, v]) => [key, v * k]));
   }
 
   _decayTo(now) {
