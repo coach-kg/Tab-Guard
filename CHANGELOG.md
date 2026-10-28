@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.37.3
+- Pressure chart: each step of the example is numbered on the curve and explained below (minute, what happened, points). It says plainly that a pause or lock itself also raises the pressure. Drag the dashed lines in the chart to move where grey, blur and block begin.
+- Settings inputs fit the dark theme: dropdowns with an accent chevron and proper spacing, time fields with an accent clock and a dark picker, number fields with small accent steppers.
+- Settings lock: the field you type in uses the same font, size and spacing as the code shown above it, so the two are easy to compare.
+
 ## 1.37.2
 - **Stimulus dimmer, explained:** an example chart drawn with your settings (how scrolling, tab pauses and lingering raise the pressure, where grey, blur and block begin, how it cools off), the points each behaviour adds, and the half-life. New setting: how strongly behaviour counts (gentle · normal · strict); gentler waits an hour.
 - Waiting room: “free for 15 minutes” now says what it means: no new wait for 15 minutes.

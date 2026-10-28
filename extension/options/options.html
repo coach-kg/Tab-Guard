@@ -191,6 +191,36 @@
     #intentQ { width: 100% !important; }
     .lists .li { flex-wrap: wrap; }
   }
+
+  /* ---- 1.37.3: inputs that fit the dark theme ---------------------------------- */
+  html { color-scheme: dark; }
+  /* the typed code looks like the shown one, letter for letter */
+  .gate-card input#gatePass { font-size: 22px; letter-spacing: .16em; padding: 12px 14px; color: var(--ink); }
+  /* selects: own chevron in the accent colour, with room around it */
+  select, .mbar select { -webkit-appearance: none; appearance: none; padding: 8px 36px 8px 12px; cursor: pointer;
+    background: var(--panel-2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236f9dff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center / 14px 14px; }
+  /* time fields: clock icon in the accent colour */
+  input[type=time] { position: relative; padding-right: 36px; }
+  input[type=time]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 1; width: 16px; height: 16px; padding: 0; margin: 0;
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%); filter: none;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236f9dff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E") no-repeat center / 16px 16px; }
+  /* number fields: two small accent chevrons instead of the browser's arrows */
+  .num { display: inline-flex; align-items: stretch; border: 1px solid var(--line-2); border-radius: 9px; background: var(--panel-2); overflow: hidden; }
+  .num:focus-within { border-color: var(--accent); }
+  .num input[type=number] { border: 0; border-radius: 0; background: transparent; padding-right: 6px; }
+  .num .st { display: flex; flex-direction: column; border-left: 1px solid var(--line-2); }
+  .num .st button { flex: 1 1 0; width: 24px; padding: 0; border: 0; background: transparent; color: var(--accent); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; }
+  .num .st button + button { border-top: 1px solid var(--line-2); }
+  .num .st button:hover { background: rgba(111,157,255,.12); }
+  .num .st svg { width: 12px; height: 12px; }
+  /* the chart: threshold lines can be dragged */
+  .pxchart .drag { cursor: ns-resize; }
+  .pxchart .hint { color: var(--faint); font-size: 12px; margin: 4px 0 0; }
+  .pxchart ol { margin: 10px 0 0; padding-left: 0; list-style: none; display: grid; gap: 3px; font-size: 13px; color: var(--muted); }
+  .pxchart ol .n { display: inline-flex; width: 18px; height: 18px; border-radius: 50%; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;
+    background: var(--ink); color: var(--bg); margin-right: 8px; vertical-align: -3px; }
+  .pxchart ol b { color: var(--ink); font-family: var(--mono); font-weight: 600; margin-left: 6px; }
 </style>
 </head>
 <body>

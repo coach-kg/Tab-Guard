@@ -552,6 +552,31 @@ function buildNav() {
   }
 }
 
+// ---- number fields: accent steppers ----------------------------------------------
+const CHEV_UP = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>';
+const CHEV_DN = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+function enhanceNumbers() {
+  document.querySelectorAll('.tg-main input[type=number]').forEach(inp => {
+    if (inp.parentElement.classList.contains("num")) return;
+    const wrap = document.createElement("span"); wrap.className = "num";
+    inp.parentNode.insertBefore(wrap, inp); wrap.appendChild(inp);
+    const st = document.createElement("span"); st.className = "st";
+    for (const [svg, dir] of [[CHEV_UP, 1], [CHEV_DN, -1]]) {
+      const b = document.createElement("button"); b.type = "button"; b.tabIndex = -1;
+      b.setAttribute("aria-label", dir > 0 ? "+" : "−");
+      setHTML(b, svg);
+      b.addEventListener("click", () => {
+        if (inp.disabled) return;
+        try { dir > 0 ? inp.stepUp() : inp.stepDown(); } catch (_) { inp.value = String((+inp.value || 0) + dir); }
+        inp.dispatchEvent(new Event("input", { bubbles: true })); inp.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      st.appendChild(b);
+    }
+    wrap.appendChild(st);
+  });
+}
+enhanceNumbers();
+
 // ---- the pressure, as a picture ------------------------------------------------
 // One example hour with the current settings: what raises the pressure, where
 // the stages begin, and how it cools off. Redrawn as you change the numbers.
@@ -562,38 +587,74 @@ function drawPressure() {
   const tau = Math.max(1, +$("decay").value || 25), k = +$("sens").value || 1;
   const st = { grey: +$("sGrey").value || 20, blur: +$("sBlur").value || 50, block: +$("sBlock").value || 80 };
   const add = Object.fromEntries(Object.entries(PRESSURE_ADDS).map(([n, v]) => [n, v * k]));
-  // the example: scrolling hard, a tab pause, a minute of GIFs, coming back twice, then away
-  const events = [[2, "scroll"], [5, "scroll"], [8, "scroll"], [10, "tabPause"], ...Array.from({ length: 6 }, (_, i) => [12 + i * 0.1, "dwell"]), [15, "revisit"], [17, "revisit"]];
-  const T = 60, step = 0.1, pts = []; let v = 0, ei = 0; const marks = [];
+  // the example story: each step is numbered on the curve and in the list below
+  const story = [
+    { n: 1, at: [2], kind: "scroll" }, { n: 2, at: [5], kind: "scroll" }, { n: 3, at: [8], kind: "scroll" },
+    { n: 4, at: [10], kind: "tabPause" }, { n: 5, at: [12, 12.1, 12.2, 12.3, 12.4, 12.5], kind: "dwell" },
+    { n: 6, at: [15, 17], kind: "revisit" },
+  ];
+  const events = story.flatMap(s => s.at.map(t => [t, s.kind, s.n])).sort((p, q) => p[0] - q[0]);
+  const T = 60, step = 0.1, pts = []; let v = 0, ei = 0; const marks = new Map();
   for (let t = 0; t <= T + 1e-9; t += step) {
     v *= Math.exp(-step / tau);
-    while (ei < events.length && events[ei][0] <= t + 1e-9) { v = Math.min(100, v + add[events[ei][1]]); marks.push([t, v, events[ei][1]]); ei++; }
+    while (ei < events.length && events[ei][0] <= t + 1e-9) { v = Math.min(100, v + add[events[ei][1]]); marks.set(events[ei][2], [t, v]); ei++; }
     pts.push([t, v]);
   }
-  const W = 640, H = 220, L = 34, R = 92, Tp = 10, B = 26, x = (t) => L + (t / T) * (W - L - R), y = (p) => Tp + (1 - p / 100) * (H - Tp - B);
+  const W = 640, H = 230, L = 34, R = 92, Tp = 14, B = 26, x = (t) => L + (t / T) * (W - L - R), y = (p) => Tp + (1 - p / 100) * (H - Tp - B);
   const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": t(LANG, "o_px_title") });
-  const band = (from, to, fill) => svg.appendChild(svgEl("rect", { x: L, y: y(to), width: W - L - R, height: y(from) - y(to), fill }));
+  const band = (from, to, fill) => svg.appendChild(svgEl("rect", { x: L, y: y(to), width: W - L - R, height: Math.max(0, y(from) - y(to)), fill }));
   band(st.grey, st.blur, "rgba(160,170,190,.10)"); band(st.blur, st.block, "rgba(111,157,255,.12)"); band(st.block, 100, "rgba(251,113,133,.13)");
-  for (const [p, key, col] of [[st.grey, "o_px_grey", "#9aa3b6"], [st.blur, "o_px_blur", "#6f9dff"], [st.block, "o_px_block", "#fb7185"]]) {
-    svg.appendChild(svgEl("line", { x1: L, x2: W - R, y1: y(p), y2: y(p), stroke: col, "stroke-dasharray": "4 4", "stroke-width": 1, opacity: .8 }));
-    svg.appendChild(svgEl("text", { x: W - R + 8, y: y(p) + 4, fill: col, "font-size": 12 }, `${t(LANG, key)} · ${p}`));
-  }
   for (const p of [0, 50, 100]) svg.appendChild(svgEl("text", { x: L - 8, y: y(p) + 4, fill: "#6a7284", "font-size": 11, "text-anchor": "end" }, String(p)));
   for (const m of [0, 15, 30, 45, 60]) svg.appendChild(svgEl("text", { x: x(m), y: H - 8, fill: "#6a7284", "font-size": 11, "text-anchor": "middle" }, m === 60 ? `${m} ${t(LANG, "o_px_min")}` : String(m)));
   svg.appendChild(svgEl("line", { x1: L, x2: W - R, y1: y(0), y2: y(0), stroke: "#2a3042" }));
   const area = `M${x(0)},${y(0)} ` + pts.map(([a, b]) => `L${x(a).toFixed(1)},${y(b).toFixed(1)}`).join(" ") + ` L${x(T)},${y(0)} Z`;
   svg.appendChild(svgEl("path", { d: area, fill: "rgba(111,157,255,.10)" }));
   svg.appendChild(svgEl("path", { d: "M" + pts.map(([a, b]) => `${x(a).toFixed(1)},${y(b).toFixed(1)}`).join(" L"), fill: "none", stroke: "#e8ebf2", "stroke-width": 2, "stroke-linejoin": "round" }));
-  for (const [a, b, kind] of marks) { if (kind === "dwell" && a > 12.05) continue; const c = svgEl("circle", { cx: x(a), cy: y(b), r: 3.5, fill: "#e8ebf2" }); c.appendChild(svgEl("title", {}, t(LANG, "o_px_" + kind, { n: Math.round(add[kind]) }))); svg.appendChild(c); }
-  const head = document.createElement("p"); head.className = "t"; head.textContent = t(LANG, "o_px_title");
-  const desc = document.createElement("p"); desc.className = "d"; desc.textContent = t(LANG, "o_px_desc");
-  const ul = document.createElement("ul");
-  for (const kind of ["scroll", "tabPause", "tabLock", "dwell", "churn", "revisit"]) {
-    const li = document.createElement("li"); const b = document.createElement("b"); b.textContent = "+" + Math.round(add[kind]);
-    li.append(b, document.createTextNode(t(LANG, "o_pxl_" + kind))); ul.appendChild(li);
+  for (const s of story) {
+    const m = marks.get(s.n); if (!m) continue;
+    const g = svgEl("g", {});
+    g.appendChild(svgEl("circle", { cx: x(m[0]), cy: y(m[1]) - 12, r: 8, fill: "#e8ebf2" }));
+    g.appendChild(svgEl("text", { x: x(m[0]), y: y(m[1]) - 8, "font-size": 10.5, "font-weight": 700, fill: "#0d1017", "text-anchor": "middle" }, String(s.n)));
+    svg.appendChild(g);
   }
+  // threshold lines: drag them up or down
+  const ids = { grey: "sGrey", blur: "sBlur", block: "sBlock" };
+  for (const [key, label, col] of [["grey", "o_px_grey", "#9aa3b6"], ["blur", "o_px_blur", "#6f9dff"], ["block", "o_px_block", "#fb7185"]]) {
+    const p = st[key];
+    const g = svgEl("g", { class: "drag", "data-key": key });
+    g.appendChild(svgEl("line", { x1: L, x2: W - R, y1: y(p), y2: y(p), stroke: col, "stroke-dasharray": "4 4", "stroke-width": 1.2 }));
+    g.appendChild(svgEl("line", { x1: L, x2: W - 4, y1: y(p), y2: y(p), stroke: "transparent", "stroke-width": 14 }));
+    g.appendChild(svgEl("path", { d: `M${W - R + 6},${y(p) - 4} l4,-4 l4,4 M${W - R + 6},${y(p) + 4} l4,4 l4,-4`, stroke: col, fill: "none", "stroke-width": 1.4 }));
+    g.appendChild(svgEl("text", { x: W - R + 20, y: y(p) + 4, fill: col, "font-size": 12 }, `${t(LANG, label)} · ${p}`));
+    g.addEventListener("pointerdown", (ev) => {
+      if ($(ids[key]).disabled) return;
+      ev.preventDefault(); g.setPointerCapture(ev.pointerId);
+      const move = (e) => {
+        const cur = $("pxChart").querySelector("svg") || svg; const r = cur.getBoundingClientRect(); if (!r.height) return; const py = (e.clientY - r.top) * (H / r.height);
+        let val = Math.round(100 * (1 - (py - Tp) / (H - Tp - B)));
+        const lo = key === "grey" ? 1 : (+$(key === "blur" ? "sGrey" : "sBlur").value || 0) + 1;
+        const hi = key === "block" ? 100 : (+$(key === "grey" ? "sBlur" : "sBlock").value || 100) - 1;
+        val = Math.max(lo, Math.min(hi, val));
+        if (+$(ids[key]).value !== val) { $(ids[key]).value = val; drawPressure(); }
+      };
+      const up = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };
+      window.addEventListener("pointermove", move); window.addEventListener("pointerup", up);
+    });
+    svg.appendChild(g);
+  }
+  const head = document.createElement("p"); head.className = "t"; head.textContent = t(LANG, "o_px_title");
+  const desc = document.createElement("p"); desc.className = "d"; desc.textContent = t(LANG, "o_px_desc2");
+  const ol = document.createElement("ol");
+  for (const s of story) {
+    const li = document.createElement("li");
+    const n = document.createElement("span"); n.className = "n"; n.textContent = String(s.n);
+    const pts2 = document.createElement("b"); pts2.textContent = (s.at.length > 1 ? s.at.length + " × " : "") + "+" + Math.round(add[s.kind]);
+    li.append(n, document.createTextNode(t(LANG, "o_pxs_" + s.n)), pts2); ol.appendChild(li);
+  }
+  const more = document.createElement("p"); more.className = "dec"; more.textContent = t(LANG, "o_px_more", { lock: Math.round(add.tabLock), churn: Math.round(add.churn) });
   const dec = document.createElement("p"); dec.className = "dec"; dec.textContent = t(LANG, "o_px_decay", { m: Math.round(tau * Math.LN2) });
-  box.replaceChildren(head, desc, svg, ul, dec);
+  const hint = document.createElement("p"); hint.className = "hint"; hint.textContent = t(LANG, "o_px_drag");
+  box.replaceChildren(head, desc, svg, hint, ol, more, dec);
 }
 for (const id of ["decay", "sens", "sGrey", "sBlur", "sBlock"]) { $(id)?.addEventListener("input", drawPressure); $(id)?.addEventListener("change", drawPressure); }
 
