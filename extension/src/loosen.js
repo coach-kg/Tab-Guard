@@ -37,6 +37,7 @@ export const FIELDS = [
   ["exits.notOnGrey", true, off],
   ["lateNight.end", "05:00", (a, b) => toMin(b) < toMin(a)],   // your day start: earlier = a fresh day sooner
   ["waitRoom.enabled", true, off],
+  ["escalation.sensitivity", 1, (a, b) => +b < +a],
   ["waitRoom.seconds", 20, (a, b) => +b < +a],
   ["waitRoom.openMinutes", 15, (a, b) => +b > +a],
 ];
@@ -63,7 +64,7 @@ export function holdLoosening(prev, next, now = Date.now()) {
   const P = empty();
   // copy the nested objects we may touch, so prev stays untouched
   next = { ...next };
-  for (const top of ["adultBlock", "exits", "lateNight", "waitRoom"]) if (next[top]) next[top] = { ...next[top] };
+  for (const top of ["adultBlock", "exits", "lateNight", "waitRoom", "escalation"]) if (next[top]) next[top] = { ...next[top] };
 
   for (const [path, dflt, looser] of FIELDS) {
     const a = get(prev, path) ?? dflt, b = get(next, path);
@@ -102,7 +103,7 @@ export function withPendingShown(c) {
   const p = c && c.loosenPending;
   if (isEmpty(p)) return c;
   const out = { ...c };
-  for (const top of ["adultBlock", "exits", "lateNight", "waitRoom"]) if (out[top]) out[top] = { ...out[top] };
+  for (const top of ["adultBlock", "exits", "lateNight", "waitRoom", "escalation"]) if (out[top]) out[top] = { ...out[top] };
   for (const [path, w] of Object.entries(p.fields || {})) set(out, path, w.v);
   for (const [path, items] of Object.entries(p.remove || {})) {
     const list = get(out, path) || [];
@@ -120,7 +121,7 @@ export function applyDue(c, now = Date.now()) {
   const p = c && c.loosenPending;
   if (isEmpty(p)) return { config: c, changed: false };
   const out = { ...c };
-  for (const top of ["adultBlock", "exits", "lateNight", "waitRoom"]) if (out[top]) out[top] = { ...out[top] };
+  for (const top of ["adultBlock", "exits", "lateNight", "waitRoom", "escalation"]) if (out[top]) out[top] = { ...out[top] };
   const rest = empty();
   let changed = false;
   for (const [path, w] of Object.entries(p.fields || {})) {

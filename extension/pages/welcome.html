@@ -13,7 +13,9 @@
   .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 26px; }
   .brand { font-weight: 700; letter-spacing: -.01em; display: flex; align-items: center; gap: 10px; }
   .brand img { width: 26px; height: 26px; }
+  .tr { display: flex; align-items: center; gap: 14px; }
   .dots { display: flex; gap: 6px; }
+  @media (max-width: 480px) { .tr { flex-direction: column-reverse; align-items: flex-end; gap: 8px; } }
   .dots i { width: 26px; height: 5px; border-radius: 99px; background: var(--line-2); transition: background .2s; }
   .dots i.on { background: var(--accent); }
   .step { display: none; }
@@ -63,7 +65,10 @@
   <div class="wrap">
     <div class="top">
       <div class="brand"><img src="../assets/icon128.png" alt=""> Tab Guard</div>
-      <div class="dots" id="dots"><i></i><i></i><i></i><i></i></div>
+      <div class="tr"><select id="lang" data-i18n-aria="w_lang" aria-label="Language">
+        <option value="auto" data-i18n="o_optAuto">🌐 Auto</option><option value="en">🇬🇧 English</option><option value="de">🇩🇪 Deutsch</option>
+        <option value="fr">🇫🇷 Français</option><option value="es">🇪🇸 Español</option><option value="ro">🇷🇴 Română</option></select>
+      <div class="dots" id="dots"><i></i><i></i><i></i><i></i></div></div>
     </div>
 
     <section class="step" data-step="0">
