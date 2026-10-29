@@ -96,7 +96,7 @@ async function load() {
   $("sGrey").value = esc.stages.grey; $("sBlur").value = esc.stages.blur; $("sBlock").value = esc.stages.block;
   $("maxBlur").value = esc.maxBlurPx; $("revMin").value = esc.baseRevealSeconds; $("revMax").value = esc.maxRevealSeconds;
   $("sens").value = String([0.6, 1, 1.5].reduce((a, b) => Math.abs(b - (+esc.sensitivity || 1)) < Math.abs(a - (+esc.sensitivity || 1)) ? b : a));
-  drawPressure();
+  drawPressure(); drawBlurDemo();
   $("revealOn").checked = esc.allowReveal !== false;
   $("dwellOn").checked = !!md.enabled; $("dwellIdle").value = md.idleSeconds;
   $("churnOn").checked = !!sc.enabled; $("churnCount").value = sc.count; $("churnSec").value = sc.seconds;
@@ -656,9 +656,22 @@ function drawPressure() {
   const hint = document.createElement("p"); hint.className = "hint"; hint.textContent = t(LANG, "o_px_drag");
   box.replaceChildren(head, desc, svg, hint, ol, more, dec);
 }
+// what the stages look like: normal, grey, half and full blur at the chosen strength
+function drawBlurDemo() {
+  const box = $("blurDemo"); if (!box) return;
+  const max = Math.max(0, +$("maxBlur").value || 12), half = Math.round(max / 2);
+  const tiles = [["o_px_normal", "none"], ["o_px_grey", "grayscale(1)"], ["o_px_blurHalf", `grayscale(1) blur(${half}px)`], ["o_px_blurMax", `grayscale(1) blur(${max}px)`]];
+  box.replaceChildren(...tiles.map(([k, f]) => {
+    const fig = document.createElement("figure"); const pic = document.createElement("div"); pic.className = "pic";
+    const i = document.createElement("i"); i.style.filter = f; pic.appendChild(i);
+    const cap = document.createElement("figcaption"); cap.textContent = t(LANG, k, { px: k === "o_px_blurHalf" ? half : max });
+    fig.append(pic, cap); return fig;
+  }));
+}
+$("maxBlur")?.addEventListener("input", drawBlurDemo); $("maxBlur")?.addEventListener("change", drawBlurDemo);
 for (const id of ["decay", "sens", "sGrey", "sBlur", "sBlock"]) { $(id)?.addEventListener("input", drawPressure); $(id)?.addEventListener("change", drawPressure); }
 
-$("language")?.addEventListener("change", () => { LANG = $("language").value || "auto"; apply(document, LANG); relabelPreviews(LANG); buildNav(); relabelSort(); renderImport(); drawPressure(); });
+$("language")?.addEventListener("change", () => { LANG = $("language").value || "auto"; apply(document, LANG); relabelPreviews(LANG); buildNav(); relabelSort(); renderImport(); drawPressure(); drawBlurDemo(); });
 
 // ---- OPTIONAL, EXPERIMENTAL: Touch Grass link (see src/touchGrass.js) ----
 // Switching it on asks the browser for the optional nativeMessaging

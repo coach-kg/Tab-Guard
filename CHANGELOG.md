@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.37.4
+- Stimulus dimmer: a live preview shows normal, grey, half and full blur at the strength you set.
+- Dragging the thresholds in the chart no longer selects text.
+- A page that keeps asking “Leave site?” is closed with a second try if the first one didn't take.
+
 ## 1.37.3
 - Pressure chart: each step of the example is numbered on the curve and explained below (minute, what happened, points). It says plainly that a pause or lock itself also raises the pressure. Drag the dashed lines in the chart to move where grey, blur and block begin.
 - Settings inputs fit the dark theme: dropdowns with an accent chevron and proper spacing, time fields with an accent clock and a dark picker, number fields with small accent steppers.
