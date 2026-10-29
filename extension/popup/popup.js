@@ -66,13 +66,25 @@ async function render() {
   // "block this site": only when the site is watched and not already blocked.
   const canBlock = s.watched && !s.onBlocklist && !s.blocked;
   $("block").style.display = canBlock ? "block" : "none";
+  // first the question how long: an hour, until tomorrow's day start, or for good
   $("block").onclick = async () => {
-    const { host } = await currentHost();
-    if (!host) return;
-    await msg({ type: "BLOCK_SITE", host });
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    render();
+    const cfg0 = (await chrome.storage.local.get("tabguardConfig")).tabguardConfig || {};
+    $("blockDay").textContent = t(LANG, "pp_blockDay", { t: (cfg0.lateNight && cfg0.lateNight.end) || "05:00" });
+    $("block").style.display = "none"; $("blockChoice").style.display = "grid";
   };
+  $("blockChoice").querySelectorAll("button[data-for]").forEach(b => {
+    b.onclick = async () => {
+      const { host } = await currentHost();
+      if (!host) return;
+      await msg({ type: "BLOCK_SITE", host, for: b.dataset.for });
+      $("blockChoice").style.display = "none";
+      render();
+    };
+  });
+  if (s.tempUntil) {
+    const hhmm = new Date(s.tempUntil).toLocaleTimeString(LANG === "auto" ? undefined : LANG, { hour: "2-digit", minute: "2-digit" });
+    b.textContent = t(LANG, "pp_blockedUntil", { t: hhmm });
+  }
 
   if (s.locked) {
     $("lockRow").style.display = "flex";

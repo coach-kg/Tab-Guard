@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.38.0
+- **Block a site for a while.** “Block this site” in the popup now asks for how long: 1 hour, until tomorrow's day start (05:00 by default), or for good (the blocklist). Open tabs of the site switch to the block screen right away. A temporary block also holds during a pause, can't be lifted early and has no emergency access; when it runs out, the block screen shows the way on.
+
 ## 1.37.4
 - Stimulus dimmer: a live preview shows normal, grey, half and full blur at the strength you set.
 - Dragging the thresholds in the chart no longer selects text.
