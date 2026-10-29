@@ -27,6 +27,10 @@
   .b-lock  { background: #3a1420; color: var(--bad); }
 
   .actions { margin-top: 14px; display: grid; gap: 8px; }
+  .bchoice { display: grid; gap: 6px; }
+  .bchoice .bq { font-size: 12.5px; color: var(--muted); }
+  .bseg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .bseg button { font-size: 12.5px; padding: 8px 4px; }
   button { font-family: inherit; font-size: 14px; font-weight: 700; padding: 10px; border: 1px solid var(--line-2);
     border-radius: 11px; cursor: pointer; background: var(--panel); color: var(--ink); }
   button.primary { background: var(--accent); border-color: var(--accent); color: #06122e; }
@@ -76,6 +80,10 @@
     <div class="actions">
       <button id="unlock" style="display:none" data-i18n="unlockDomain">unlock this domain</button>
       <button id="block" data-i18n="blockSite">block this site</button>
+      <div class="bchoice" id="blockChoice" style="display:none">
+        <span class="bq" data-i18n="pp_blockAsk">For how long?</span>
+        <div class="bseg"><button type="button" data-for="hour" data-i18n="pp_block1h">1 hour</button><button type="button" data-for="day" id="blockDay">until tomorrow</button><button type="button" data-for="ever" data-i18n="pp_blockEver">for good</button></div>
+      </div>
       <button class="ghost" id="cool" data-i18n="resetPressure">reset pressure</button>
       <button class="primary" id="toggle">pause protection…</button>
       <button class="ghost" id="opts" data-i18n="settings">settings</button>

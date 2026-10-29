@@ -38,18 +38,30 @@ async function boot() {
   // the nudge, with one of two questions
   document.getElementById("nudge").textContent = t(LANG, "cd_nudge") + " " + t(LANG, Math.random() < 0.5 ? "cd_nudgeQ1" : "cd_nudgeQ2");
 
-  const hard = reason === "blocked" || reason === "adult" || reason === "import" || reason === "unfiltered" || reason === "proxy";
+  const hard = reason === "temp" || reason === "blocked" || reason === "adult" || reason === "import" || reason === "unfiltered" || reason === "proxy";
   const adultish = reason === "adult" || reason === "unfiltered" || reason === "proxy";
   if (hard) {
     document.querySelector(".glyph").textContent = reason === "proxy" ? "🧭" : adultish ? "🔞" : "🚫";
-    document.querySelector("h1").textContent = reason === "proxy" ? t(LANG, "cd_proxyTitle") : adultish ? t(LANG, "cd_adultTitle") : t(LANG, "cd_blocked");
+    const until = +params.get("until") || 0;
+    // a temporary block runs out by itself: then the way on appears here
+    if (reason === "temp" && until && target) {
+      const iv = setInterval(() => {
+        if (Date.now() < until) return;
+        clearInterval(iv);
+        const a = document.getElementById("go");
+        a.textContent = t(LANG, "cd_go", { host: host || new URL(target).hostname });
+        a.href = target; a.style.display = "inline-block";
+      }, 1000);
+    }
+    const hhmm = until ? new Date(until).toLocaleTimeString(LANG === "auto" ? undefined : LANG, { hour: "2-digit", minute: "2-digit" }) : "";
+    document.querySelector("h1").textContent = reason === "temp" ? t(LANG, "cd_tempTitle", { t: hhmm }) : reason === "proxy" ? t(LANG, "cd_proxyTitle") : adultish ? t(LANG, "cd_adultTitle") : t(LANG, "cd_blocked");
     document.getElementById("timer").style.display = "none";
     document.getElementById("lead").textContent = "";
     document.getElementById("host").style.display = "none";
-    document.getElementById("reason").textContent = t(LANG, { adult: "cd_reasonAdult", import: "cd_reasonImport", unfiltered: "cd_reasonUnfiltered", proxy: "cd_reasonProxy" }[reason] || "cd_reasonBlock");
+    document.getElementById("reason").textContent = t(LANG, { temp: "cd_reasonTemp", adult: "cd_reasonAdult", import: "cd_reasonImport", unfiltered: "cd_reasonUnfiltered", proxy: "cd_reasonProxy" }[reason] || "cd_reasonBlock");
     // how to undo it — only where that is possible, and said as it is
     const locked = !!(cfg.lock && cfg.lock.enabled);
-    const hintKey = reason === "proxy" ? "cd_hintProxy" : reason === "unfiltered" ? "" : locked ? "cd_hintLock" : "cd_hintNoLock";
+    const hintKey = reason === "proxy" ? "cd_hintProxy" : (reason === "unfiltered" || reason === "temp") ? "" : locked ? "cd_hintLock" : "cd_hintNoLock";
     if (hintKey) {
       const p = document.createElement("p");
       p.className = "small";
@@ -116,7 +128,7 @@ boot();
 const send = (m) => new Promise(r => chrome.runtime.sendMessage(m, x => { void chrome.runtime.lastError; r(x || {}); }));
 async function emergencyOffer() {
   const box = document.getElementById("em");
-  if (!box || !host || !target || reason === "adult" || reason === "unfiltered" || reason === "proxy") return;
+  if (!box || !host || !target || reason === "adult" || reason === "unfiltered" || reason === "proxy" || reason === "temp") return;
   const st = await send({ type: "EMERGENCY_STATUS", host });
   if (!st.available) { box.replaceChildren(); return; }
   setHTML(box, `<button class="eml" id="emLink"></button>`);

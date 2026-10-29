@@ -39,6 +39,31 @@ let mFullBlur = null;
 // question. Once through, the site is free for a while (openMinutes). The wait
 // is timed here, not in the page, so it can't be skipped in the inspector.
 const WAIT_KEY = "tabguardWaitPass";
+// ---- temporary blocks ------------------------------------------------------------
+// "Block this site" from the popup, for an hour or until tomorrow's day start.
+// Like the blocklist a hard rule (also during a pause); it can't be lifted
+// early, it simply runs out.
+const TEMP_KEY = "tabguardTempBlocks";
+let tempBlocks = {};                       // host → blocked until (ms)
+function tempUntil(host) {
+  const h = normalizeHost(host || ""); if (!h) return 0;
+  let until = 0;
+  for (const [e, t] of Object.entries(tempBlocks)) if (t > Date.now() && (h === e || h.endsWith("." + e))) until = Math.max(until, t);
+  return until;
+}
+function nextDayStart() {
+  const m = /^(\d{1,2}):(\d{2})$/.exec((cfg.lateNight && cfg.lateNight.end) || "05:00") || [0, 5, 0];
+  const d = new Date(); d.setHours(+m[1], +m[2], 0, 0);
+  if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1);
+  return d.getTime();
+}
+async function blockOpenTabs(host, reason) {
+  const h = normalizeHost(host);
+  for (const t of await chrome.tabs.query({})) {
+    const th = hostFromUrl(t.url || "");
+    if (th && (th === h || th.endsWith("." + h))) redirectToCooldown(t.id, th, reason, t.url);
+  }
+}
 let waitPass = {};                         // listed entry → free until (ms)
 const waitStart = new Map();               // tabId → { entry, at }
 function waitCfg() { return { ...DEFAULT_CONFIG.waitRoom, ...(cfg.waitRoom || {}) }; }
@@ -99,6 +124,7 @@ function ensureConfig() {
       const got = await chrome.storage.local.get([BREAKER_KEY, PRESSURE_KEY, EMERG_KEY, WAIT_KEY]);
       if (got[EMERG_KEY]) emerg = { day: 0, grant: null, ...got[EMERG_KEY] };
       waitPass = got[WAIT_KEY] || {};
+      tempBlocks = (await chrome.storage.local.get(TEMP_KEY))[TEMP_KEY] || {};
       try { mImport = makeImportMatcher(listsMerged(await migrateImports(chrome.storage.local))); } catch (_) { mImport = null; }
       breaker.restore(got[BREAKER_KEY]);
       p.restore(got[PRESSURE_KEY]);
@@ -128,6 +154,7 @@ chrome.runtime.onInstalled.addListener((d) => {
 });
 chrome.runtime.onStartup.addListener(ensureConfig);
 chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "local" && changes[TEMP_KEY]) tempBlocks = changes[TEMP_KEY].newValue || {};
   if (area === "local" && changes[EMERG_KEY]) emerg = { day: 0, grant: null, ...(changes[EMERG_KEY].newValue || {}) };
   // an old single list written later (older settings file, older version): move it over
   if (area === "local" && (changes[IMPORT_KEY] && changes[IMPORT_KEY].newValue)) {
@@ -252,6 +279,7 @@ function watched(host, url) {
 // host. Whitelisted hosts are never hard-blocked.
 function hardBlocked(host) {
   if (!host || trusted(host)) return false;
+  if (tempUntil(host)) return true;
   if (mBlock && mBlock.has(host)) return true;
   if (cfg.adultBlock?.enabled && isAdultHost(host, cfg.adultBlock.extraHosts)) return true;
   return false;
@@ -285,6 +313,7 @@ function importBlocked(host, url) {
 function blockReason(host) {
   if (mBlock && mBlock.has(host)) return "blocked";
   if (cfg.adultBlock?.enabled && isAdultHost(host, cfg.adultBlock.extraHosts)) return "adult";
+  if (tempUntil(host)) return "temp";
   return "blocked";
 }
 
@@ -501,6 +530,7 @@ async function redirectToCooldown(tabId, host, reason, toUrl) {
   let url = chrome.runtime.getURL("pages/cooldown.html")
     + `?host=${encodeURIComponent(host || "")}&reason=${encodeURIComponent(reason || "")}`;
   if (toUrl && /^https?:\/\//i.test(toUrl)) url += `&url=${encodeURIComponent(toUrl)}`;
+  if (reason === "temp") url += `&until=${tempUntil(host)}`;
   try { await chrome.tabs.update(tabId, { url }); } catch (_) {}
   holdCheck(tabId, url);
 }
@@ -702,6 +732,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           watched: isW,
           blocked: h ? hardBlocked(h) : false,
           onBlocklist: h ? !!(mBlock && mBlock.has(h)) : false,
+          tempUntil: h ? tempUntil(h) : 0,
           fullBlur: h ? fullBlurFor(h) : false,
           disableLinks: !!cfg.fullBlurDisableLinks,
           allowReveal: cfg.escalation?.allowReveal !== false,
@@ -724,8 +755,20 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         return sendResponse({});
       }
       case "BLOCK_SITE": {
-        // add a host to the hard blocklist (easy to add; removal is gated)
-        if (msg.host) await addToBlocklist(msg.host);
+        // for an hour, until tomorrow's day start, or for good (the blocklist;
+        // removal is gated). Open tabs of the site switch to the block screen.
+        const h = normalizeHost(msg.host || "");
+        if (!h) return sendResponse({ ok: false });
+        if (msg.for === "hour" || msg.for === "day") {
+          const until = msg.for === "hour" ? Date.now() + 60 * 60000 : nextDayStart();
+          tempBlocks = Object.fromEntries(Object.entries(tempBlocks).filter(([, t]) => t > Date.now()));
+          tempBlocks[h] = Math.max(tempBlocks[h] || 0, until);
+          await chrome.storage.local.set({ [TEMP_KEY]: tempBlocks });
+          await blockOpenTabs(h, "temp");
+          return sendResponse({ ok: true, until });
+        }
+        await addToBlocklist(h);
+        await blockOpenTabs(h, "blocked");
         return sendResponse({ ok: true });
       }
       case "IS_ADULT_ENABLED": {
