@@ -523,6 +523,11 @@ function holdCheck(tabId, url) {
       let gone = tabId;
       try { const d = await chrome.tabs.discard(tabId); if (d && d.id != null) gone = d.id; } catch (_) {}
       await chrome.tabs.remove(gone);
+      // if the page still held on (it asked again), try once more a moment later
+      setTimeout(async () => {
+        try { await chrome.tabs.get(gone); } catch (_) { return; }
+        try { const d = await chrome.tabs.discard(gone); await chrome.tabs.remove(d && d.id != null ? d.id : gone); } catch (_) {}
+      }, 2500);
     } catch (_) {}
   }, 2500);
 }

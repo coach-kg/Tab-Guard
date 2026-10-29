@@ -131,7 +131,7 @@
   .pxchart { margin: 6px 0 10px; padding: 14px 14px 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-2); }
   .pxchart .t { font-weight: 700; font-size: 14px; margin: 0 0 2px; }
   .pxchart .d { color: var(--muted); font-size: 13px; margin: 0 0 8px; }
-  .pxchart svg { display: block; width: 100%; height: auto; }
+  .pxchart svg { display: block; width: 100%; height: auto; user-select: none; -webkit-user-select: none; touch-action: none; }
   .pxchart ul { list-style: none; padding: 0; margin: 10px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 4px 16px; font-size: 13px; color: var(--muted); }
   .pxchart li b { color: var(--ink); font-family: var(--mono); font-weight: 600; margin-right: 6px; }
   .pxchart .dec { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
@@ -214,6 +214,16 @@
   .num .st button + button { border-top: 1px solid var(--line-2); }
   .num .st button:hover { background: rgba(111,157,255,.12); }
   .num .st svg { width: 12px; height: 12px; }
+  /* live preview of grey and blur strength */
+  .blurdemo { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 2px 0 12px; }
+  .blurdemo figure { margin: 0; }
+  .blurdemo .pic { height: 74px; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); background: #1b2433; }
+  .blurdemo .pic i { display: block; width: 100%; height: 100%; transition: filter .2s; background:
+    radial-gradient(circle at 28% 38%, #ffd166 0 13%, transparent 14%),
+    radial-gradient(circle at 70% 60%, #ef476f 0 18%, transparent 19%),
+    linear-gradient(160deg, #06d6a0 0 38%, #118ab2 38% 70%, #073b4c 70%); }
+  .blurdemo figcaption { font-size: 12px; color: var(--muted); margin-top: 5px; text-align: center; }
+  @media (max-width: 720px) { .blurdemo { grid-template-columns: repeat(2, 1fr); } }
   /* the chart: threshold lines can be dragged */
   .pxchart .drag { cursor: ns-resize; }
   .pxchart .hint { color: var(--faint); font-size: 12px; margin: 4px 0 0; }
@@ -397,6 +407,7 @@
     <div class="field" data-dep="escOn"><label data-i18n="o_l_blurAt">→ blur at</label><span class="in"><input type="number" id="sBlur" min="1" max="100"></span></div>
     <div class="field" data-dep="escOn"><label data-i18n="o_l_blockAt">→ block at</label><span class="in"><input type="number" id="sBlock" min="1" max="100"></span></div>
     <div class="field" data-dep="escOn"><label data-i18n="o_l_maxBlur">Max blur (px)</label><span class="in"><input type="number" id="maxBlur" min="2"></span></div>
+    <div class="blurdemo" id="blurDemo" data-dep="escOn" aria-hidden="true"></div>
     <div class="field" data-dep="escOn"><label data-i18n="o_l_allowReveal">Allow the reveal button</label><span class="in"><span class="state" id="revealOnS">on</span><label class="sw"><input type="checkbox" id="revealOn" checked><span></span></label></span></div>
     <div class="field" data-dep="escOn"><label data-i18n="o_l_revealDelay">Reveal delay min–max (sec)</label><span class="in"><input type="number" id="revMin" min="0" style="width:64px"> <input type="number" id="revMax" min="1" style="width:64px"></span></div>
     <p class="note" id="escPending" style="display:none;color:var(--warn);margin:4px 0 0"></p>
