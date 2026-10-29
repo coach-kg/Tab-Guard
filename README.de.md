@@ -13,6 +13,12 @@
 <p align="center"><a href="README.md">English</a></p>
 
 <p align="center">
+  <a href="https://chromewebstore.google.com/detail/tab-guard/imjfddpobokjecegpoghmojaondepmai"><img src="docs/badges/chrome-web-store.png" height="58" alt="Im Chrome Web Store verfügbar"></a>
+  &nbsp;
+  <a href="https://addons.mozilla.org/de/firefox/addon/tab-guard/"><img src="docs/badges/firefox-addons.svg" height="58" alt="Add-on für Firefox holen"></a>
+</p>
+
+<p align="center">
   <img src="docs/screenshots/de/1-intention.png" width="760" alt="Tab Guard fragt: Was hast du hier vor?">
 </p>
 
@@ -57,11 +63,23 @@ Tab Guard steht für sich allein. Wer auch [Touch Grass](https://github.com/coac
 
 Beim Einschalten fragt der Browser nach der optionalen Berechtigung `nativeMessaging`. Tab Guard meldet der Mac-App dann alle paar Sekunden, dass es läuft, wie viele Fenster es sieht und ob es in privaten Fenstern laufen darf. Sonst nichts, und nichts verlässt den Computer. Ohne den Schalter läuft dieser Code nicht. Code: [`extension/src/touchGrass.js`](extension/src/touchGrass.js).
 
+Schritt für Schritt: [Tab Guard mit Touch Grass verbinden](docs/touch-grass.de.md)
+
 Touch Grass: [für Mac](https://github.com/coach-kg/touchgrass-mac) · [für Android](https://github.com/coach-kg/TouchGrassBlocker)
 
 ## Installieren
 
-Die Einträge im Chrome Web Store und bei Firefox Add-ons sind unterwegs. Bis dahin, oder für den neuesten Stand:
+Chrome, Brave, Edge, Opera, Arc und Vivaldi holen Tab Guard aus dem Chrome Web Store. Firefox und Zen von Firefox Add-ons.
+
+<p align="center">
+  <a href="https://chromewebstore.google.com/detail/tab-guard/imjfddpobokjecegpoghmojaondepmai"><img src="docs/badges/chrome-web-store.png" height="58" alt="Im Chrome Web Store verfügbar"></a>
+  &nbsp;
+  <a href="https://addons.mozilla.org/de/firefox/addon/tab-guard/"><img src="docs/badges/firefox-addons.svg" height="58" alt="Add-on für Firefox holen"></a>
+</p>
+
+Du nutzt Touch Grass auf dem Mac? [Beides Schritt für Schritt verbinden](docs/touch-grass.de.md).
+
+### Neuester Stand aus dem Code
 
 **Chrome, Brave, Edge, Opera**
 1. Repository herunterladen oder klonen.

@@ -18,6 +18,12 @@
 </p>
 
 <p align="center">
+  <a href="https://chromewebstore.google.com/detail/tab-guard/imjfddpobokjecegpoghmojaondepmai"><img src="docs/badges/chrome-web-store.png" height="58" alt="Available in the Chrome Web Store"></a>
+  &nbsp;
+  <a href="https://addons.mozilla.org/en-US/firefox/addon/tab-guard/"><img src="docs/badges/firefox-addons.svg" height="58" alt="Get the add-on for Firefox"></a>
+</p>
+
+<p align="center">
   <img src="docs/screenshots/1-intention.png" width="760" alt="Tab Guard asks one question: what are you here for?">
 </p>
 
@@ -74,11 +80,23 @@ Tab Guard stands on its own. For people who also use [Touch Grass](https://githu
 
 Switching it on asks for the optional `nativeMessaging` permission. Tab Guard then tells the Mac app every few seconds that it is running, how many windows it sees and whether it may run in private windows. Nothing else, and nothing leaves the computer. Without the switch none of this code runs. Code: [`extension/src/touchGrass.js`](extension/src/touchGrass.js).
 
+Step by step: [Connect Tab Guard with Touch Grass](docs/touch-grass.md)
+
 Touch Grass: [for Mac](https://github.com/coach-kg/touchgrass-mac) · [for Android](https://github.com/coach-kg/TouchGrassBlocker)
 
 ## Install
 
-Store listings for the Chrome Web Store and Firefox Add-ons are on their way. Until then, or to run the latest code:
+Chrome, Brave, Edge, Opera, Arc and Vivaldi get Tab Guard from the Chrome Web Store. Firefox and Zen from Firefox Add-ons.
+
+<p align="center">
+  <a href="https://chromewebstore.google.com/detail/tab-guard/imjfddpobokjecegpoghmojaondepmai"><img src="docs/badges/chrome-web-store.png" height="58" alt="Available in the Chrome Web Store"></a>
+  &nbsp;
+  <a href="https://addons.mozilla.org/en-US/firefox/addon/tab-guard/"><img src="docs/badges/firefox-addons.svg" height="58" alt="Get the add-on for Firefox"></a>
+</p>
+
+Using Touch Grass on a Mac? [Connect the two step by step](docs/touch-grass.md).
+
+### Run the latest code
 
 **Chrome, Brave, Edge, Opera**
 1. Download or clone this repository.
