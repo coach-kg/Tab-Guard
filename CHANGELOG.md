@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.39.0
+- **Content filter lock.** An optional lock just for the content filter, set up with a few tiles: open it with a long passphrase you type by hand (40–200 characters), with a code only a trusted person has, or not at all before a date or for 7–365 days. With the lock on, the filter can't be switched off: there is only a break of 30 min, 1 h or 2 h, which can start 21 hours after asking, needs the unlock and an answer to “what do you need it for right now?”, sends a reminder every 30 minutes, and ends by itself. Removing the lock follows the same path. The form, the inspector or a settings file can't switch the filter off or remove the lock.
+
 ## 1.38.0
 - **Block a site for a while.** “Block this site” in the popup now asks for how long: 1 hour, until tomorrow's day start (05:00 by default), or for good (the blocklist). Open tabs of the site switch to the block screen right away. A temporary block also holds during a pause, can't be lifted early and has no emergency access; when it runs out, the block screen shows the way on.
 
