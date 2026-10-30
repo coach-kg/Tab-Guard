@@ -175,7 +175,9 @@ async function save() {
   c.academicProxies = $("proxyOn").checked;
   c.blocklist = ordered("blocklist");
   c.autoBlockOnLock = $("autoBlock").checked;
-  c.adultBlock = { enabled: $("adult").checked, detect: $("adultDetect").checked, searchPause: $("adultSearch").checked,
+  // with the content-filter lock on, the switch is not ours to change (breaks go through the lock)
+  const adultLocked = !!(stored.adultLock && stored.adultLock.enabled);
+  c.adultBlock = { enabled: adultLocked ? (stored.adultBlock ? stored.adultBlock.enabled !== false : true) : $("adult").checked, detect: $("adultDetect").checked, searchPause: $("adultSearch").checked,
     greyLinks: $("adultGrey").checked, safeSearch: $("adultSafe").checked, bypass: $("adultBypass").checked,
     terms: keepOrder("adultTerms", [...new Set($("adultTerms").value.split("\n").map(x => x.trim().toLowerCase()).filter(x => x.length >= 2))]),
     extraHosts: ordered("adultLearned"), bypassSites: ordered("bypassSites") };
@@ -327,7 +329,7 @@ const TOGGLES = ["wrOn", "adultBypass", "sfPrePlay", "sfSwipe", "adultSafe", "pv
 // ---- export / import --------------------------------------------------------
 async function exportSettings() {
   const c = (await chrome.storage.local.get(KEY))[KEY] || {};
-  const safe = { ...c }; delete safe.lock; // never export the lock
+  const safe = { ...c }; delete safe.lock; delete safe.adultLock; // never export the locks
   const blob = new Blob([JSON.stringify(safe, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -352,6 +354,7 @@ async function importSettings(file) {
       merged[k] = (v && typeof v === "object" && !Array.isArray(v) && base[k] && typeof base[k] === "object" && !Array.isArray(base[k])) ? { ...base[k], ...v } : v;
     }
     if (lock) merged.lock = lock; // keep existing lock, ignore any in the file
+    if (c.adultLock) merged.adultLock = c.adultLock; else delete merged.adultLock; // the content-filter lock can't come in or go out through a file
     delete merged.loosenPending;
     merged = holdLoosening(c, merged);           // a settings file can't loosen faster than the form
     await chrome.storage.local.set({ [KEY]: merged });

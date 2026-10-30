@@ -231,6 +231,43 @@
   .pxchart ol .n { display: inline-flex; width: 18px; height: 18px; border-radius: 50%; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;
     background: var(--ink); color: var(--bg); margin-right: 8px; vertical-align: -3px; }
   .pxchart ol b { color: var(--ink); font-family: var(--mono); font-weight: 600; margin-left: 6px; }
+
+  /* ---- content-filter lock: tiles, playful but calm ------------------------------ */
+  .albox { margin: 8px 0 12px; padding: 16px; border-radius: 14px; border: 1px solid var(--line-2);
+    background: linear-gradient(160deg, rgba(139,92,246,.10), rgba(111,157,255,.05) 60%, transparent); }
+  .al-head { display: flex; gap: 12px; align-items: flex-start; }
+  .al-big { font-size: 26px; line-height: 30px; height: 30px; flex: none; }
+  .al-h { font-weight: 700; font-size: 15.5px; line-height: 30px; }
+  .al-sub, .al-note { color: var(--muted); font-size: 13px; margin: 2px 0 0; }
+  .al-note { margin: 10px 0 0; }
+  .al-q { font-weight: 700; font-size: 14px; margin: 16px 0 8px; }
+  .al-go { margin-top: 12px; }
+  .al-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .al-tile { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; padding: 14px; border-radius: 14px; cursor: pointer;
+    background: var(--panel-2); border: 1px solid var(--line-2); color: var(--ink); font: inherit; transition: transform .12s, border-color .12s; }
+  .al-tile:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .al-tile.on { border-color: var(--accent); background: rgba(111,157,255,.12); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .al-tile .al-ic { font-size: 26px; line-height: 1; margin-bottom: 4px; }
+  .al-tile .al-tt { font-weight: 700; font-size: 14px; }
+  .al-tile .al-st { color: var(--muted); font-size: 12.5px; }
+  .al-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .al-chip { font: inherit; font-size: 13.5px; padding: 7px 14px; border-radius: 99px; border: 1px solid var(--line-2); background: var(--panel-2); color: var(--muted); cursor: pointer; }
+  .al-chip.on { border-color: var(--accent); color: var(--ink); background: rgba(111,157,255,.14); }
+  .al-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 14px; }
+  .al-primary { font: inherit; font-weight: 700; font-size: 14px; padding: 10px 18px; border-radius: 11px; border: 0; cursor: pointer; background: var(--accent); color: #06122e; }
+  .al-link { font: inherit; font-size: 13px; background: none; border: 0; color: var(--faint); text-decoration: underline; cursor: pointer; }
+  .al-status { margin-top: 12px; font-size: 14px; color: var(--ink); }
+  .al-state { display: flex; gap: 10px; align-items: flex-start; margin: 12px 0 10px; padding: 10px 12px; border-radius: 11px; background: var(--panel-2); border: 1px solid var(--line-2); font-size: 14px; }
+  .al-state .al-ic { font-size: 18px; line-height: 21px; height: 21px; flex: none; }
+  .al-state.run { border-color: rgba(251,191,36,.45); }
+  .al-state.ready { border-color: var(--accent); }
+  .al-code { font-size: 16px; letter-spacing: .08em; word-break: break-all; text-align: left; }
+  .al-in, .al-why, .albox input[type=date] { width: 100%; font: inherit; font-size: 14px; padding: 10px 12px; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--line-2); color: var(--ink); }
+  .al-in.mono { font-family: var(--mono); font-size: 16px; letter-spacing: .08em; }
+  .al-why { resize: vertical; }
+  .al-err { color: var(--bad); font-size: 13px; min-height: 0; margin: 6px 0 0; }
+  .al-locked .sw { opacity: .55; }
+  @media (prefers-reduced-motion: reduce) { .al-tile { transition: none; } .al-tile:hover { transform: none; } }
 </style>
 </head>
 <body>
@@ -315,6 +352,7 @@
     <p class="note" data-i18n="o_n_jug">Blocks known adult domains + RTA-labelled pages.</p>
     <p class="note" id="adultPending" style="display:none;color:var(--warn);margin:0 0 4px"></p>
     <div class="field"><label data-i18n="o_l_enabled">Enabled</label><span class="in"><span class="state" id="adultS">off</span><label class="sw"><input type="checkbox" id="adult"><span></span></label></span></div>
+    <div class="albox" id="alBox"></div>
     <div class="field" data-dep="adult"><label data-i18n="o_l_adultDetect">Recognise adult sites by what they say about themselves</label><span class="in"><span class="state" id="adultDetectS">on</span><label class="sw"><input type="checkbox" id="adultDetect" checked><span></span></label></span></div>
     <p class="note" data-i18n="o_n_adultLearned" data-dep="adult">Recognised sites land here and are closed before they load next time.</p>
     <textarea id="adultLearned" spellcheck="false" data-dep="adult"></textarea>
@@ -551,5 +589,6 @@
   <script src="../assets/lock.js"></script>
   <script src="../src/adultSignals.js"></script>
   <script src="options.js" type="module"></script>
+  <script src="adultlock.js" type="module"></script>
 </body>
 </html>

@@ -20,6 +20,7 @@ import { isEssentialHost } from "./src/essential.js";
 // OPTIONAL, EXPERIMENTAL: Touch Grass link. Inert unless the user grants the
 // optional nativeMessaging permission in Settings → Experimental.
 import { startTouchGrassLink } from "./src/touchGrass.js";
+import { ADULT_BREAK_KEY, ADULT_WAIT_HOURS, enforceAdultLock, lockActive, lockedUntil, breakRunning, hashCode } from "./src/adultLock.js";
 
 const scroll = new ScrollEngine();
 const sessions = new SessionEngine();
@@ -44,6 +45,7 @@ const WAIT_KEY = "tabguardWaitPass";
 // Like the blocklist a hard rule (also during a pause); it can't be lifted
 // early, it simply runs out.
 const TEMP_KEY = "tabguardTempBlocks";
+let adultBreak = null;                     // the content filter's break request / running break
 let tempBlocks = {};                       // host → blocked until (ms)
 function tempUntil(host) {
   const h = normalizeHost(host || ""); if (!h) return 0;
@@ -130,7 +132,8 @@ function ensureConfig() {
       p.restore(got[PRESSURE_KEY]);
       buildMatchers(c);
       pressure = p;   // assign engines first…
-      cfg = c;        // …then cfg, so `cfg` being set implies everything is ready
+      adultBreak = (await chrome.storage.local.get(ADULT_BREAK_KEY))[ADULT_BREAK_KEY] || null;
+      cfg = enforceAdultLock(c, adultBreak);        // …then cfg, so `cfg` being set implies everything is ready
       return cfg;
     })();
   }
@@ -154,6 +157,10 @@ chrome.runtime.onInstalled.addListener((d) => {
 });
 chrome.runtime.onStartup.addListener(ensureConfig);
 chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "local" && changes[ADULT_BREAK_KEY]) {
+    adultBreak = changes[ADULT_BREAK_KEY].newValue || null;
+    if (cfg) { cfg = enforceAdultLock({ ...cfg, adultBlock: { ...(cfg.adultBlock || {}) } }, adultBreak); buildMatchers(cfg); }
+  }
   if (area === "local" && changes[TEMP_KEY]) tempBlocks = changes[TEMP_KEY].newValue || {};
   if (area === "local" && changes[EMERG_KEY]) emerg = { day: 0, grant: null, ...(changes[EMERG_KEY].newValue || {}) };
   // an old single list written later (older settings file, older version): move it over
@@ -175,7 +182,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
     // the stored object as-is meant any partial write — the popup's pause
     // button on a fresh install, a trimmed import — silently dropped
     // `enabled`, the tab windows and the rest, and switched everything off.
-    cfg = { ...DEFAULT_CONFIG, ...(changes.tabguardConfig.newValue || {}) };
+    cfg = enforceAdultLock({ ...DEFAULT_CONFIG, ...(changes.tabguardConfig.newValue || {}) }, adultBreak);
     buildMatchers(cfg);
     if (pressure) pressure.apply(cfg);
     broadcastStage();
@@ -637,7 +644,7 @@ async function applyLoosening() {
   const r = applyDue(g.tabguardConfig || {});
   if (r.changed) {
     await chrome.storage.local.set({ tabguardConfig: r.config });
-    cfg = { ...DEFAULT_CONFIG, ...r.config };                 // don't wait for onChanged
+    cfg = enforceAdultLock({ ...DEFAULT_CONFIG, ...r.config }, adultBreak);                 // don't wait for onChanged
     buildMatchers(cfg);
   }
   // imported lists whose removal hour is over
@@ -837,6 +844,61 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         } else if (adult) { await rememberAdultHost(host); redirectToCooldown(tabId, host, "adult"); }
         return sendResponse({ adult, score: r.score, why: r.why });
       }
+      // ---- content-filter lock: break requests ----
+      case "ADULT_LOCK_STATUS": {
+        const raw = (await chrome.storage.local.get("tabguardConfig")).tabguardConfig || {};
+        return sendResponse({ lock: raw.adultLock ? { ...raw.adultLock, hash: undefined, salt: undefined } : null, request: adultBreak, now: Date.now() });
+      }
+      case "ADULT_BREAK_REQUEST": {
+        // start the long wait for a break (or for removing the lock)
+        const raw = (await chrome.storage.local.get("tabguardConfig")).tabguardConfig || {};
+        if (!lockActive(raw)) return sendResponse({ ok: false });
+        if (Date.now() < lockedUntil(raw)) return sendResponse({ ok: false, error: "until" });
+        if (breakRunning(adultBreak)) return sendResponse({ ok: false, error: "running" });
+        const kind = msg.kind === "remove" ? "remove" : "break";
+        const minutes = [30, 60, 120].includes(+msg.minutes) ? +msg.minutes : 60;
+        const wait = (raw.adultLock.method === "until" ? 0 : (+raw.adultLock.waitHours || ADULT_WAIT_HOURS)) * 3600000;
+        const req = { kind, minutes, requestedAt: Date.now(), readyAt: Date.now() + wait };
+        await chrome.storage.local.set({ [ADULT_BREAK_KEY]: req });
+        return sendResponse({ ok: true, request: req });
+      }
+      case "ADULT_BREAK_CANCEL": {
+        if (breakRunning(adultBreak)) {
+          // ending a running break early is always fine: the filter comes back
+          await chrome.storage.local.remove(ADULT_BREAK_KEY);
+          return sendResponse({ ok: true });
+        }
+        await chrome.storage.local.remove(ADULT_BREAK_KEY);
+        return sendResponse({ ok: true });
+      }
+      case "ADULT_BREAK_START": {
+        // after the wait: the unlock code, and an answer to "what for?"
+        const raw = (await chrome.storage.local.get("tabguardConfig")).tabguardConfig || {};
+        const l = raw.adultLock;
+        const req = adultBreak;
+        if (!lockActive(raw) || !req || req.until) return sendResponse({ ok: false });
+        if (Date.now() < req.readyAt || Date.now() < lockedUntil(raw)) return sendResponse({ ok: false, error: "wait" });
+        if (String(msg.why || "").trim().length < 3) return sendResponse({ ok: false, error: "why" });
+        if (l.method !== "until") {
+          const h = await hashCode(l.salt, String(msg.code || ""));
+          if (h !== l.hash) return sendResponse({ ok: false, error: "code" });
+        }
+        if (req.kind === "remove") {
+          raw.adultLock = { ...l, enabled: false };
+          await chrome.storage.local.set({ tabguardConfig: raw });
+          await chrome.storage.local.remove(ADULT_BREAK_KEY);
+          return sendResponse({ ok: true, removed: true });
+        }
+        const until = Date.now() + req.minutes * 60000;
+        await chrome.storage.local.set({ [ADULT_BREAK_KEY]: { ...req, until, startedAt: Date.now() } });
+        return sendResponse({ ok: true, until });
+      }
+      case "ADULT_LOCK_CODE": {
+        // the passphrase method shows its text again at unlock time (typing it is the friction)
+        const raw = (await chrome.storage.local.get("tabguardConfig")).tabguardConfig || {};
+        const l = raw.adultLock;
+        return sendResponse({ text: l && l.method === "passphrase" ? l.text || "" : "" });
+      }
       case "WAITROOM_INFO": {
         const w = waitCfg();
         const st = waitStart.get(tabId);
@@ -961,6 +1023,20 @@ chrome.alarms.onAlarm.addListener(async (a) => {
   if (a.name !== "tabguard-decay") return;
   await ensureConfig();
   await applyLoosening();
+  // the content filter's break: reminders every 30 minutes, then back on by itself
+  if (adultBreak && adultBreak.until) {
+    if (Date.now() >= adultBreak.until) {
+      await chrome.storage.local.remove(ADULT_BREAK_KEY);
+      notify(i18nT(cfg.language, "al_backTitle"), i18nT(cfg.language, "al_backMsg"));
+    } else {
+      const since = Math.floor((Date.now() - (adultBreak.startedAt || Date.now())) / 60000);
+      if (since > 0 && since % 30 === 0 && adultBreak.lastNote !== since) {
+        adultBreak = { ...adultBreak, lastNote: since };
+        await chrome.storage.local.set({ [ADULT_BREAK_KEY]: adultBreak });
+        notify(i18nT(cfg.language, "al_remTitle"), i18nT(cfg.language, "al_remMsg", { m: Math.ceil((adultBreak.until - Date.now()) / 60000) }));
+      }
+    }
+  }
   emergCheckExpiry();
   // auto-resume protection when a pause has expired
   if (!cfg.enabled && cfg.pausedUntil && Date.now() >= cfg.pausedUntil) {
