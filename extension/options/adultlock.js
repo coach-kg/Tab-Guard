@@ -76,6 +76,7 @@ async function render(force) {
         parts.push(el("p", { class: "al-q", text: t(LANG, "al_dateQ") }), inp);
       }
       parts.push(el("p", { class: "al-note", text: "⏳ " + t(LANG, setup.method === "date" || setup.method === "days" ? "al_noteUntil" : "al_noteWait", { h: ADULT_WAIT_HOURS }) }));
+      if (setup.method === "buddy") parts.push(el("p", { class: "al-note al-warn", text: "⚠️ " + t(LANG, "al_lostNote") }));
       parts.push(el("div", { class: "al-row" },
         el("button", { type: "button", class: "al-primary", text: "🔐 " + t(LANG, "al_activate"), onclick: activate }),
         el("button", { type: "button", class: "mini-btn", text: t(LANG, "pg_cancel"), onclick: () => { box.dataset.open = ""; render(); } })));
@@ -84,6 +85,7 @@ async function render(force) {
     // ---- the trusted person's code, once -----------------------------------
     parts.push(el("p", { class: "al-q", text: "🤝 " + t(LANG, "al_giveCode") }));
     parts.push(el("div", { class: "reveal-code mono al-code", text: shownCode }));
+    parts.push(el("p", { class: "al-note al-warn", text: "⚠️ " + t(LANG, "al_lostNote") }));
     parts.push(el("button", { type: "button", class: "al-primary", text: "✓ " + t(LANG, "al_gaveCode"), onclick: () => { shownCode = ""; render(); } }));
   } else {
     // ---- locked: status, break requests -----------------------------------
