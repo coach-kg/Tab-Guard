@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.39.2
+- The lost-code warning no longer points to reinstalling.
+
 ## 1.39.1
 - Content filter lock with a trusted person: setting it up and showing the code now say plainly that a lost code means the filter stays on for good. There is deliberately no way around it.
 
