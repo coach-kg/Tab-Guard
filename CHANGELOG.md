@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.39.1
+- Content filter lock with a trusted person: setting it up and showing the code now say plainly that a lost code means the filter stays on for good. There is deliberately no way around it.
+
 ## 1.39.0
 - **Content filter lock.** An optional lock just for the content filter, set up with a few tiles: open it with a long passphrase you type by hand (40–200 characters), with a code only a trusted person has, or not at all before a date or for 7–365 days. With the lock on, the filter can't be switched off: there is only a break of 30 min, 1 h or 2 h, which can start 21 hours after asking, needs the unlock and an answer to “what do you need it for right now?”, sends a reminder every 30 minutes, and ends by itself. Removing the lock follows the same path. The form, the inspector or a settings file can't switch the filter off or remove the lock.
 
