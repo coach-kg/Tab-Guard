@@ -25,7 +25,8 @@ async function boot() {
   const site = host.replace(/^www\./, "");
   document.title = t(L, "wr_tab", { host: site });
   const title = $("title");
-  title.textContent = t(L, "wr_title", { host: "\u0000" });
+  // two ways of saying it, taking turns at random
+  title.textContent = t(L, Math.random() < 0.5 ? "wr_title" : "wr_title2", { host: "\u0000" });
   // the host in bold, inside the translated sentence
   const [a, b] = title.textContent.split("\u0000");
   const strong = document.createElement("b"); strong.textContent = site;
