@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.39.3
+- Waiting room: the heading takes turns between “Auf dem Weg zu …” and “Willst du zu …?” (EN: “On your way to …” / “Do you want to go to …?”) instead of “… öffnet gleich”, which sounded as if the site would open by itself.
+
 ## 1.39.2
 - The lost-code warning no longer points to reinstalling.
 
