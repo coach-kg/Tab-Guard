@@ -19,7 +19,7 @@ import { applyDue } from "./src/loosen.js";
 import { isEssentialHost } from "./src/essential.js";
 // OPTIONAL, EXPERIMENTAL: Touch Grass link. Inert unless the user grants the
 // optional nativeMessaging permission in Settings → Experimental.
-import { startTouchGrassLink } from "./src/touchGrass.js";
+import { startTouchGrassLink, touchGrassPulse } from "./src/touchGrass.js";
 import { ADULT_BREAK_KEY, ADULT_WAIT_HOURS, enforceAdultLock, lockActive, lockedUntil, breakRunning, hashCode } from "./src/adultLock.js";
 
 const scroll = new ScrollEngine();
@@ -148,7 +148,7 @@ async function persist() {
   });
 }
 
-startTouchGrassLink(() => !!(cfg && !cfg.enabled));
+startTouchGrassLink(() => !!(cfg && !cfg.enabled), () => (cfg && cfg.pausedUntil) || 0);
 
 chrome.runtime.onInstalled.addListener(ensureConfig);
 // a short introduction right after installing (not on updates)
@@ -1007,6 +1007,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         const st = await exitState(); st.pending = null; await saveExit(st);
         return sendResponse({});
       }
+      case "TG_PULSE": { touchGrassPulse(); return sendResponse({}); }   // Android: a visible page, see src/touchGrass.js
       case "OPEN_EXIT_PAGE": {
         const u = chrome.runtime.getURL("pages/exit.html") + `?kind=${msg.kind === "reset" ? "reset" : "pause"}`;
         try { await chrome.tabs.create({ url: u }); } catch (_) {}

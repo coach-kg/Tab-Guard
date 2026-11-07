@@ -46,6 +46,7 @@ Tab Guard reduces compulsive browsing: it notices doomscrolling, rapid tab-openi
 - `alarms`: A once-a-minute timer that lets the pressure ease off and ends pauses, locks and delayed settings changes on time.
 - `notifications`: A local notice when a site gets locked or protection resumes after a pause.
 - `nativeMessaging` (optional): Not requested at install. Asked for only when the user turns on “Connect with Touch Grass” under Settings → Experimental. Tab Guard then tells the Touch Grass app on the same computer that it is running: a random profile id, the window count, whether it may run in private windows, paused or not, and its version. No browsing data, nothing over the network. Turning it off removes the permission.
+- `http://127.0.0.1/*` (optional, Firefox for Android only): the same link on a phone, to the Touch Grass app at 127.0.0.1, the device itself.
 - Content scripts on all http(s) pages, in all frames: Distraction can happen on any site and inside embedded frames, so the scripts run there to notice scrolling, feeds, short videos and adult or proxy pages, and to apply the friction (pause, grey, blur, block). The extension has no host permissions and makes no network requests.
 
 **Remote code:** No, I am not using remote code. All scripts are in the package.
@@ -71,6 +72,13 @@ turns on "Connect with Touch Grass" (Settings > Experimental). It sends a
 heartbeat to a companion app on the same computer (random profile id, window
 count, private-window permission, paused flag, version). Code:
 src/touchGrass.js.
+
+On Firefox for Android, which has no native messaging, the same switch asks
+for the optional host permission http://127.0.0.1/* instead and POSTs the same
+heartbeat (without the window count) to http://127.0.0.1:47823/tabguard/beat,
+the companion app Touch Grass on the same phone. This is the only network
+request the extension makes, it goes to the device itself, and only while the
+user has the switch on.
 
 The one linter warning is a dynamic import() in content/content.js that loads
 the extension's own modules through runtime.getURL(), since content scripts

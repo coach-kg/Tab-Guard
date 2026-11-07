@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.40.0
+- **Touch Grass for Android.** “Connect with Touch Grass” now also works in Firefox for Android. There it asks to reach `127.0.0.1` (the phone itself) instead of native messaging. While a page is open, Tab Guard tells Touch Grass every 15 seconds that it runs, whether it may run in private tabs and whether it is paused; nothing leaves the phone. Touch Grass can then allow Firefox only with Tab Guard. Setup: [docs/touch-grass.md](docs/touch-grass.md#android-firefox-only-with-tab-guard).
+
 ## 1.39.3
 - Waiting room: the heading takes turns between “Auf dem Weg zu …” and “Willst du zu …?” (EN: “On your way to …” / “Do you want to go to …?”) instead of “… öffnet gleich”, which sounded as if the site would open by itself.
 
