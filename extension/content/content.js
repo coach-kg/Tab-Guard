@@ -98,6 +98,21 @@ setInterval(tgCheckGuards, 800);
   reportFocus();
   safeSend({ type: "REVISIT" });
 
+  // Touch Grass for Android (src/touchGrass.js): while the link is on, a visible
+  // page tells the background every 15 s that Tab Guard runs. Top frame only,
+  // never from a hidden tab. Off everywhere else, so desktop pages stay quiet.
+  if (window.top === window) {
+    let tgPulseOn = false, tgPulseTimer = null;
+    const tgPulse = () => { if (tgPulseOn && document.visibilityState === "visible" && extAlive()) safeSend({ type: "TG_PULSE" }); };
+    const tgPulseSet = (on) => {
+      tgPulseOn = !!on; clearInterval(tgPulseTimer); tgPulseTimer = null;
+      if (tgPulseOn) { tgPulseTimer = setInterval(tgPulse, 15000); tgPulse(); }
+    };
+    try { chrome.storage.local.get("tabguardTouchGrassPulse", (g) => { void chrome.runtime.lastError; tgPulseSet(g && g.tabguardTouchGrassPulse); }); } catch (_) {}
+    try { chrome.storage.onChanged.addListener((c, a) => { if (a === "local" && c.tabguardTouchGrassPulse) tgPulseSet(c.tabguardTouchGrassPulse.newValue); }); } catch (_) {}
+    document.addEventListener("visibilitychange", tgPulse);
+  }
+
   function safeSend(msg, cb) { try { chrome.runtime.sendMessage(msg, (r) => { void chrome.runtime.lastError; cb && cb(r); }); } catch (_) {} }
   // True only while this content script's extension context is still alive.
   function extAlive() { try { return !!(chrome.runtime && chrome.runtime.id); } catch (_) { return false; } }

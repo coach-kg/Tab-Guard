@@ -80,9 +80,21 @@ The block shows why and offers **Set up Tab Guard**. That opens this page, and t
 - **Several profiles?** Every profile needs Tab Guard and its own connection switch. Close profiles you don't use.
 - **Still waiting?** Turn the switch in Tab Guard off and on again, or restart the browser.
 
+## Android: Firefox only with Tab Guard
+
+[Touch Grass for Android](https://github.com/coach-kg/TouchGrassBlocker) can allow Firefox only while Tab Guard runs in it. Chrome, Brave and Samsung Internet can't run extensions, so this is about Firefox and its relatives (Firefox Beta, Nightly, Fennec, Iceraven, Tor Browser). Firefox Focus can't run extensions either.
+
+1. **Add Tab Guard** in Firefox: [Tab Guard for Android](https://addons.mozilla.org/android/addon/tab-guard/). When Firefox asks, allow it in private tabs. Missed it? Firefox menu → **Extensions** → Tab Guard → allow private browsing.
+2. **Switch on the connection:** Firefox menu → **Extensions** → Tab Guard → **Settings**. At the bottom, under **Experimental**, turn on **Connect with Touch Grass**. Firefox asks to access `127.0.0.1`, the phone itself. Allow it.
+3. **Turn on the rule:** Touch Grass → **Settings** → **Links** → **Firefox only with Tab Guard**. Below the switch it shows **Connected · Tab Guard 1.40.0** once the first sign of life arrived.
+
+How it works: while a page is open, Tab Guard tells Touch Grass every 15 seconds that it runs, plus once a minute from the background. If Firefox has been in front for 20 seconds and Tab Guard has been silent for 90 seconds, isn't allowed in private tabs, or is paused past the end of its own pause (at most 2 hours), Touch Grass blocks Firefox. The block offers **Set up Tab Guard**: Firefox opens Tab Guard's page and stays free for 3 minutes. While a schedule is active, that works once an hour.
+
+If Touch Grass can't check, it blocks nothing: protection off, port 47823 taken by another app, or Touch Grass not running. Switching the rule off is locked while a schedule is active.
+
 ## What Tab Guard sends
 
-Every few seconds: a random id for the browser profile, the number of windows, whether it may run in private windows, whether it is paused, and its version. No addresses, no page titles. Native messaging only reaches a program on this computer, nothing goes over the network. Without the switch this code doesn't run: [`extension/src/touchGrass.js`](../extension/src/touchGrass.js).
+Every few seconds: a random id for the browser profile, the number of windows, whether it may run in private windows, whether it is paused, and its version. No addresses, no page titles. Native messaging only reaches a program on this computer, nothing goes over the network. On Android the same, without the window count, goes to `127.0.0.1:47823` on the phone, nothing leaves it. Without the switch this code doesn't run: [`extension/src/touchGrass.js`](../extension/src/touchGrass.js).
 
 ---
 

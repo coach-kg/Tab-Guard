@@ -681,29 +681,35 @@ $("language")?.addEventListener("change", () => { LANG = $("language").value || 
 // permission; switching it off gives the permission back. It is not part of
 // the saved settings, so it is not behind Save.
 const TG_STATUS_KEY = "tabguardTouchGrass";
+// Firefox for Android has no native messaging; there the link is a local call
+// to Touch Grass for Android on 127.0.0.1 and needs that host instead.
+let TG_ANDROID = false;
+const tgPerm = () => TG_ANDROID ? { origins: ["http://127.0.0.1/*"] } : { permissions: ["nativeMessaging"] };
 async function tgRefresh() {
   const sw = $("tgLink");
   if (!sw) return;
   let granted = false;
-  try { granted = await chrome.permissions.contains({ permissions: ["nativeMessaging"] }); } catch (_) {}
+  try { granted = await chrome.permissions.contains(tgPerm()); } catch (_) {}
   sw.checked = granted;
   $("tgLinkS").textContent = t(LANG, granted ? "o_on" : "o_off");
+  const note = document.querySelector('[data-i18n="o_n_tgLink"], [data-i18n="o_n_tgLinkAndroid"]');
+  if (note) { note.dataset.i18n = TG_ANDROID ? "o_n_tgLinkAndroid" : "o_n_tgLink"; note.textContent = t(LANG, note.dataset.i18n); }
   let st = null;
   try { st = (await chrome.storage.session.get(TG_STATUS_KEY))[TG_STATUS_KEY]; } catch (_) {}
-  const key = !granted ? "tg_st_off" : st?.state === "connected" ? "tg_st_ok" : "tg_st_missing";
+  const key = !granted ? "tg_st_off" : st?.state === "connected" ? "tg_st_ok"
+    : TG_ANDROID ? "tg_st_missingAndroid" : "tg_st_missing";
   $("tgLinkStatus").textContent = t(LANG, key) + (granted && st?.state !== "connected" && st?.error ? ` (${st.error})` : "");
   if (granted) $("expBox").open = true;
 }
 $("tgLink")?.addEventListener("change", (e) => {
   // The request has to happen inside the click, with nothing awaited before it.
-  const ask = e.target.checked
-    ? chrome.permissions.request({ permissions: ["nativeMessaging"] })
-    : chrome.permissions.remove({ permissions: ["nativeMessaging"] });
+  const ask = e.target.checked ? chrome.permissions.request(tgPerm()) : chrome.permissions.remove(tgPerm());
   Promise.resolve(ask).catch(() => {}).finally(tgRefresh);
 });
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "session" && changes[TG_STATUS_KEY]) tgRefresh();
 });
+Promise.resolve(chrome.runtime.getPlatformInfo?.()).then((i) => { TG_ANDROID = i?.os === "android"; }).catch(() => {}).finally(tgRefresh);
 $("language")?.addEventListener("change", tgRefresh);
 
 async function boot() {

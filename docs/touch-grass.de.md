@@ -84,9 +84,21 @@ Die Sperre zeigt den Grund und bietet **Tab Guard einrichten** an. Das öffnet d
 - **Mehrere Profile?** Jedes Profil braucht Tab Guard und einen eigenen Verbindungsschalter. Profile, die du nicht nutzt, schließen.
 - **Wartet immer noch?** Den Schalter in Tab Guard aus- und wieder einschalten, oder den Browser neu starten.
 
+## Android: Firefox nur mit Tab Guard
+
+[Touch Grass für Android](https://github.com/coach-kg/TouchGrassBlocker) kann Firefox nur erlauben, solange Tab Guard darin läuft. Chrome, Brave und Samsung Internet können keine Erweiterungen. Es geht also um Firefox und seine Ableger (Firefox Beta, Nightly, Fennec, Iceraven, Tor Browser). Firefox Focus kann auch keine Erweiterungen.
+
+1. **Tab Guard hinzufügen** in Firefox: [Tab Guard für Android](https://addons.mozilla.org/android/addon/tab-guard/). Fragt Firefox nach privaten Tabs, erlauben. Verpasst? Firefox-Menü → **Erweiterungen** → Tab Guard → privates Surfen erlauben.
+2. **Die Verbindung einschalten:** Firefox-Menü → **Erweiterungen** → Tab Guard → **Einstellungen**. Ganz unten unter **Experimentell** **Mit Touch Grass verbinden** einschalten. Firefox fragt nach Zugriff auf `127.0.0.1`, das Handy selbst. Erlauben.
+3. **Die Regel einschalten:** Touch Grass → **Einstellungen** → **Links** → **Firefox nur mit Tab Guard**. Unter dem Schalter steht **Verbunden · Tab Guard 1.40.0**, sobald das erste Lebenszeichen da ist.
+
+So funktioniert es: Solange eine Seite offen ist, meldet Tab Guard alle 15 Sekunden, dass es läuft, dazu einmal pro Minute aus dem Hintergrund. Ist Firefox seit 20 Sekunden vorne und Tab Guard seit 90 Sekunden still, in privaten Tabs nicht erlaubt oder länger pausiert, als seine eigene Pause dauert (höchstens 2 Stunden), sperrt Touch Grass Firefox. Die Sperre bietet **Tab Guard einrichten**: Firefox öffnet die Seite von Tab Guard und bleibt 3 Minuten frei. Während ein Zeitplan aktiv ist, geht das einmal pro Stunde.
+
+Kann Touch Grass nicht prüfen, sperrt es nichts: Schutz aus, Port 47823 von einer anderen App belegt oder Touch Grass läuft nicht. Ausschalten lässt sich die Regel nicht, solange ein Zeitplan aktiv ist.
+
 ## Was Tab Guard sendet
 
-Alle paar Sekunden: eine zufällige Kennung für das Browser-Profil, die Zahl der Fenster, ob es in privaten Fenstern laufen darf, ob es pausiert ist, und die Version. Keine Adressen, keine Seitentitel. Native Messaging erreicht nur ein Programm auf diesem Computer, nichts geht übers Netz. Ohne den Schalter läuft dieser Code nicht: [`extension/src/touchGrass.js`](../extension/src/touchGrass.js).
+Alle paar Sekunden: eine zufällige Kennung für das Browser-Profil, die Zahl der Fenster, ob es in privaten Fenstern laufen darf, ob es pausiert ist, und die Version. Keine Adressen, keine Seitentitel. Native Messaging erreicht nur ein Programm auf diesem Computer, nichts geht übers Netz. Auf Android geht dasselbe, ohne die Fensterzahl, an `127.0.0.1:47823` auf dem Handy und verlässt es nicht. Ohne den Schalter läuft dieser Code nicht: [`extension/src/touchGrass.js`](../extension/src/touchGrass.js).
 
 ---
 

@@ -37,6 +37,9 @@ import json, sys
 path, gecko_id = sys.argv[1], sys.argv[2]
 m = json.load(open(path))
 m["background"] = {"scripts": ["background.js"], "type": "module"}
+# Firefox for Android: the Touch Grass link talks to 127.0.0.1 on the phone.
+# Optional, asked only when the link is switched on there.
+m["optional_host_permissions"] = sorted(set(m.get("optional_host_permissions", [])) | {"http://127.0.0.1/*"})
 m["browser_specific_settings"] = {
     "gecko": {
         "id": gecko_id,
