@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.40.1
+- Firefox for Android: the switch “Connect with Touch Grass” can be turned off again, and shows why it can’t reach Touch Grass.
+- Known proxy and unblocker link drops are blocked while the content filter is on.
+- A setting saved while Tab Guard was just waking up could be lost until the next restart. Fixed.
+
 ## 1.40.0
 - **Touch Grass for Android.** “Connect with Touch Grass” now also works in Firefox for Android. There it asks to reach `127.0.0.1` (the phone itself) instead of native messaging. While a page is open, Tab Guard tells Touch Grass every 15 seconds that it runs, whether it may run in private tabs and whether it is paused; nothing leaves the phone. Touch Grass can then allow Firefox only with Tab Guard. Setup: [docs/touch-grass.md](docs/touch-grass.md#android-firefox-only-with-tab-guard).
 

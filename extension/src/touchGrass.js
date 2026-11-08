@@ -24,6 +24,12 @@ const ID_KEY = "tabguardTouchGrassId";
 export const TG_STATUS_KEY = "tabguardTouchGrass";
 /** chrome.storage.local: content scripts pulse only while this is true (Android). */
 export const TG_PULSE_KEY = "tabguardTouchGrassPulse";
+/**
+ * chrome.storage.local, Android only: the switch itself. Firefox counts the
+ * content scripts' access to all http sites as granted, so the 127.0.0.1 permission is
+ * always "there" and can't be taken back. The switch is this flag instead.
+ */
+export const TG_ON_KEY = "tabguardTouchGrassOn";
 const BEAT_MS = 4000;
 const RETRY_MS = 30000;
 
@@ -51,7 +57,10 @@ async function isAndroid() {
 
 async function permitted() {
   try {
-    if (await isAndroid()) return await chrome.permissions.contains({ origins: ANDROID_ORIGINS });
+    if (await isAndroid()) {
+      const on = (await chrome.storage.local.get(TG_ON_KEY))[TG_ON_KEY] === true;
+      return on && await chrome.permissions.contains({ origins: ANDROID_ORIGINS });
+    }
     return await chrome.permissions.contains({ permissions: ["nativeMessaging"] });
   } catch (_) { return false; }
 }
@@ -177,7 +186,10 @@ async function androidBeat(force = false) {
     if (r.ok) setStatus("connected", { android: true });
     else setStatus("missing", { android: true, error: "HTTP " + r.status });
   } catch (e) {
-    setStatus("missing", { android: true });   // Touch Grass not installed, or not running
+    // Touch Grass not installed, not running, or its switch is off. The
+    // browser's reason helps when it is none of those.
+    const why = e && e.name === "AbortError" ? "timeout" : String(e && e.message || e || "").slice(0, 120);
+    setStatus("missing", { android: true, ...(why ? { error: why } : {}) });
   } finally {
     clearTimeout(timer);
     androidInFlight = false;
@@ -211,6 +223,10 @@ export function startTouchGrassLink(paused, until) {
   chrome.windows?.onCreated?.addListener(() => { beat(); });
   chrome.windows?.onRemoved?.addListener(() => { beat(); });
   // After the browser restarts the worker, reconnect.
+  chrome.storage.onChanged.addListener((c, area) => {
+    if (area !== "local" || !c[TG_ON_KEY]) return;
+    if (c[TG_ON_KEY].newValue === true) { lastAndroidBeat = 0; connect(); } else disconnect();
+  });
   chrome.alarms.create("tabguard-touchgrass", { periodInMinutes: 1 });
   chrome.alarms.onAlarm.addListener((a) => { if (a.name === "tabguard-touchgrass") connect(); });
   connect();
