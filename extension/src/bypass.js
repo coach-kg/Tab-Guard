@@ -17,7 +17,7 @@
   const CONTEXT = /\b(school|schools|chromebooks?|chroebooks?|classroom|class|k12|teacher|links?|sites?|websites?|games?|gaming|roblox|discord|instagram|snapchat|tiktok|movies)\b/;
   const FILTERS = /\b(goguardian|securly|lightspeed|blocksi|iboss|linewize|contentkeeper|gaggle|hapara|deledao|fortiguard|umbrella|smoothwall|netsweeper|relay)\b/;
   const VERBS = /\b(bypass|bypassing|unblock|unblocking|get around|turn off|remove|disable|kill|hack|break|escape|delete)\b/;
-  const NAMES = /\b(interstellar|melonsoda|melon soda|gn ?math|doge unblocker|doge|holy unblocker|ultraviolet|rammerhead|scramjet|petezah|truffled|selenite|bull ?ee|space links|space|cherri|nebula|womginx|achroma|zaka|catclass|yuki os|edurocks|voltix|polaris|ghost|kite|tung ?tung|croxy ?proxy|proxyium|blockaway|frogie|froggie|utopia|quasar|lunar|daydream ?x|glint|galaxy|vapor|sheep|shadow|emerald|radon|rainbow|velara|artclass|hypertabs|dynamic|corrosion|alloy|ghostlink|ghost link)\b/;
+  const NAMES = /\b(interstellar|melonsoda|melon soda|gn ?math|doge unblocker|doge|holy unblocker|ultraviolet|rammerhead|scramjet|petezah|truffled|selenite|bull ?ee|space links|space|cherri|nebula|womginx|achroma|zaka|catclass|yuki os|edurocks|voltix|polaris|ghost|kite|tung ?tung|croxy ?proxy|proxyium|blockaway|frogie|froggie|utopia|quasar|lunar|daydream ?x|glint|galaxy|vapor|sheep|shadow|emerald|radon|rainbow|velara|artclass|hypertabs|dynamic|corrosion|alloy|ghostlink|ghost link|rook|solara ?os|solara|glim|study ?hub|stroberri|strawberrii|steobrrii|voya|flver|triple ?t ?hd|cinera|aurora|dogeub)\b/;
 
   // A score: 2 or more means "this is about getting around blockers".
   function score(text) {
@@ -57,6 +57,19 @@
     if (h === "script.google.com" && /^\/macros\/s\/[^/]+\/exec/.test(p)) return true;
     return false;
   }
+
+  // Unblocker link drops seen in the wild (Nov 2026). Whole domains block all
+  // their subdomains; buckets and CDN hosts only that one project. They move
+  // often; what is found later is remembered on its own (bypassSites).
+  const BUCKETS = ["rooklearn", "rookclass", "solaraos", "glimstudy", "strawberrii", "kitestudy", "pinepractice"];
+  const KNOWN = [
+    "trustpty.com", "rublconxray.com",
+    "d1lm38j3y7voha.cloudfront.net", "d2stkrd586kxhh.cloudfront.net", "d1bb3w1h8fhcci.cloudfront.net",
+    ...BUCKETS.flatMap(b => [
+      "s3.amazonaws.com/" + b + "/", "s3.us-east-1.amazonaws.com/" + b + "/",
+      b + ".s3.amazonaws.com", b + ".s3.us-east-1.amazonaws.com",
+    ]),
+  ];
 
   // ---- proxies and unblocker sites ------------------------------------------
   // A web proxy hides the real address inside its own:
@@ -238,5 +251,5 @@
     });
   }
 
-  self.TGBypass = { norm, score, isBypassLink, embeddedTarget, isProxyUrl, titleCloak, siteKey, paramTargets, isFramedProxy, looksLikeUrlBar, engineMarks, engineDatabases, fileHits };
+  self.TGBypass = { KNOWN, norm, score, isBypassLink, embeddedTarget, isProxyUrl, titleCloak, siteKey, paramTargets, isFramedProxy, looksLikeUrlBar, engineMarks, engineDatabases, fileHits };
 })();

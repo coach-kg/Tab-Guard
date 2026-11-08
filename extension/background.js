@@ -89,7 +89,9 @@ function buildMatchers(c) {
   mStreaming = makeHostMatcher(c.streamingHosts);
   mFullBlur = makeHostMatcher(c.fullBlurHosts);
   // proxy / unblocker sites found so far (host, or host + project path)
-  const bl = (c.adultBlock && Array.isArray(c.adultBlock.bypassSites)) ? c.adultBlock.bypassSites : [];
+  // plus the built-in list of known link drops (src/bypass.js KNOWN)
+  const bl = [...((c.adultBlock && Array.isArray(c.adultBlock.bypassSites)) ? c.adultBlock.bypassSites : []),
+    ...((self.TGBypass && self.TGBypass.KNOWN) || [])];
   try { mBypass = bl.length ? makeImportMatcher(parseImport(bl.join("\n"))) : null; } catch (_) { mBypass = null; }
 }
 let mBypass = null;
@@ -182,10 +184,15 @@ chrome.storage.onChanged.addListener((changes, area) => {
     // the stored object as-is meant any partial write — the popup's pause
     // button on a fresh install, a trimmed import — silently dropped
     // `enabled`, the tab windows and the rest, and switched everything off.
-    cfg = enforceAdultLock({ ...DEFAULT_CONFIG, ...(changes.tabguardConfig.newValue || {}) }, adultBreak);
-    buildMatchers(cfg);
-    if (pressure) pressure.apply(cfg);
-    broadcastStage();
+    const apply = () => {
+      cfg = enforceAdultLock({ ...DEFAULT_CONFIG, ...(changes.tabguardConfig.newValue || {}) }, adultBreak);
+      buildMatchers(cfg);
+      if (pressure) pressure.apply(cfg);
+      broadcastStage();
+    };
+    // Still starting up: the start-up read may predate this write and would
+    // overwrite it when it finishes. Apply after it instead.
+    if (!cfg && initPromise) initPromise.then(apply, apply); else apply();
   }
 });
 

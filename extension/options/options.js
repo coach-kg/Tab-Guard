@@ -681,6 +681,7 @@ $("language")?.addEventListener("change", () => { LANG = $("language").value || 
 // permission; switching it off gives the permission back. It is not part of
 // the saved settings, so it is not behind Save.
 const TG_STATUS_KEY = "tabguardTouchGrass";
+const TG_ON_KEY = "tabguardTouchGrassOn";
 // Firefox for Android has no native messaging; there the link is a local call
 // to Touch Grass for Android on 127.0.0.1 and needs that host instead.
 let TG_ANDROID = false;
@@ -690,6 +691,8 @@ async function tgRefresh() {
   if (!sw) return;
   let granted = false;
   try { granted = await chrome.permissions.contains(tgPerm()); } catch (_) {}
+  // Android: the permission is always granted (see TG_ON_KEY in src/touchGrass.js); the switch is a flag.
+  if (TG_ANDROID) { try { granted = granted && (await chrome.storage.local.get(TG_ON_KEY))[TG_ON_KEY] === true; } catch (_) { granted = false; } }
   sw.checked = granted;
   $("tgLinkS").textContent = t(LANG, granted ? "o_on" : "o_off");
   const note = document.querySelector('[data-i18n="o_n_tgLink"], [data-i18n="o_n_tgLinkAndroid"]');
@@ -703,11 +706,19 @@ async function tgRefresh() {
 }
 $("tgLink")?.addEventListener("change", (e) => {
   // The request has to happen inside the click, with nothing awaited before it.
-  const ask = e.target.checked ? chrome.permissions.request(tgPerm()) : chrome.permissions.remove(tgPerm());
+  const want = e.target.checked;
+  if (TG_ANDROID) {
+    const ask = want ? chrome.permissions.request(tgPerm()) : Promise.resolve(false);
+    Promise.resolve(ask).catch(() => false)
+      .then((ok) => chrome.storage.local.set({ [TG_ON_KEY]: !!(want && ok) }))
+      .catch(() => {}).finally(tgRefresh);
+    return;
+  }
+  const ask = want ? chrome.permissions.request(tgPerm()) : chrome.permissions.remove(tgPerm());
   Promise.resolve(ask).catch(() => {}).finally(tgRefresh);
 });
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === "session" && changes[TG_STATUS_KEY]) tgRefresh();
+  if ((area === "session" && changes[TG_STATUS_KEY]) || (area === "local" && changes[TG_ON_KEY])) tgRefresh();
 });
 Promise.resolve(chrome.runtime.getPlatformInfo?.()).then((i) => { TG_ANDROID = i?.os === "android"; }).catch(() => {}).finally(tgRefresh);
 $("language")?.addEventListener("change", tgRefresh);
