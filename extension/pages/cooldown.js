@@ -77,9 +77,58 @@ async function boot() {
     tick(); setInterval(tick, 1000);
   }
 
+  // the way out that isn't the site: your last tab, or a real break
+  offerWaysOut();
+
   // localize the static small paragraph (marked with data-t in html)
   document.querySelectorAll("[data-t]").forEach(el => { el.textContent = t(LANG, el.getAttribute("data-t")); });
   document.title = document.querySelector("h1").textContent + " · Tab Guard";
+}
+
+// ---- ways out: back to the last tab, or a break --------------------------
+// Most of all Tab Guard wants you to step away until the pressure drops; going
+// back to what you were doing before is the other good way.
+async function lastTab() {
+  try {
+    const me = await chrome.tabs.getCurrent();
+    if (!me) return null;
+    const ours = chrome.runtime.getURL("");
+    const tabs = (await chrome.tabs.query({ windowId: me.windowId }))
+      .filter(x => x.id !== me.id && x.url && !x.url.startsWith(ours));   // never another block page
+    if (!tabs.length) return null;
+    tabs.sort((a, b) => (b.lastAccessed || 0) - (a.lastAccessed || 0) || Math.abs(a.index - me.index) - Math.abs(b.index - me.index));
+    return { me, prev: tabs[0] };
+  } catch (_) { return null; }
+}
+
+async function offerWaysOut() {
+  const back = document.getElementById("back"), brk = document.getElementById("brk");
+  brk.textContent = t(LANG, "cd_break");
+  brk.addEventListener("click", startBreak);
+  const lt = await lastTab();
+  if (!lt) return;
+  back.textContent = t(LANG, "cd_back");
+  back.hidden = false;
+  back.addEventListener("click", async () => {
+    try { await chrome.tabs.update(lt.prev.id, { active: true }); await chrome.tabs.remove(lt.me.id); } catch (_) {}
+  });
+}
+
+const BREAK_MS = 5 * 60 * 1000;
+function startBreak() {
+  const card = document.querySelector(".card");
+  setHTML(card, `<div class="glyph">🌿</div><h1 id="bt"></h1><div class="timer" id="bm"></div><p id="bs"></p>`);
+  card.querySelector("#bt").textContent = t(LANG, "br_title");
+  document.title = t(LANG, "br_title") + " · Tab Guard";
+  const end = Date.now() + BREAK_MS;
+  const tickBreak = () => {
+    const left = end - Date.now();
+    card.querySelector("#bm").textContent = fmt(left);
+    card.querySelector("#bs").textContent = left > 0 ? t(LANG, "br_sub", { t: fmt(left) }) : t(LANG, "br_end");
+    if (left <= 0) { clearInterval(iv); setTimeout(() => location.reload(), 2500); }
+  };
+  const iv = setInterval(tickBreak, 500);
+  tickBreak();
 }
 
 function fmt(ms) {
@@ -92,6 +141,7 @@ function go() { if (target) location.replace(target); }
 
 function showFree() {
   const el = document.getElementById("timer");
+  if (!el) return;
   el.textContent = t(LANG, "cd_cleared"); el.style.color = "#4ade80";
   if (!target || freeShown) return;
   freeShown = true;
@@ -105,6 +155,7 @@ function showFree() {
 
 async function tick() {
   const el = document.getElementById("timer");
+  if (!el) return;                             // a break has taken over the page
   if (reason === "escalated") {
     const left = ESCALATED_WAIT_MS - (Date.now() - openedAt);
     if (left > 0) { el.textContent = fmt(left); return; }

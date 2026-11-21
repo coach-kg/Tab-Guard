@@ -26,6 +26,9 @@
   .emp button{width:100%;font:inherit;font-weight:650;padding:11px 18px;border:0;border-radius:11px;cursor:pointer;margin-top:6px}
   .emh{position:relative;overflow:hidden;background:#3b82f6;color:#fff}.emh i{position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(255,255,255,.22)}.emh span{position:relative}
   .emc{background:#1b2130;color:#cdd4e4}
+  .acts{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:-6px 0 6px}
+  .acts button{font:inherit;font-size:14px;font-weight:600;padding:9px 16px;border-radius:999px;border:1px solid #2a3042;background:#141a26;color:#cdd4e4;cursor:pointer}
+  .acts button:hover{background:#1b2232}
 </style>
 </head>
 <body>
@@ -37,6 +40,7 @@
     <a class="go" id="go" href="#" style="display:none"></a>
     <p class="small" id="reason"></p>
     <p class="nudge" id="nudge"></p>
+    <div class="acts" id="acts"><button id="back" hidden></button><button id="brk"></button></div>
     <div id="em"></div>
   </div>
   <script src="cooldown.js" type="module"></script>
