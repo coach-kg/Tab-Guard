@@ -1,6 +1,6 @@
 # Texte vor 1.41.0
 
-Tab Guard 1.41.0 hat die deutschen Texte stark überarbeitet. Hier steht jeder geänderte Text, wie er bis 1.40.1 war, und wie er jetzt heißt. Die ganze alte Fassung steht im Git-Tag `v1.40.1` in `extension/assets/i18n.js`.
+Tab Guard 1.41.0 hat die deutschen Texte stark überarbeitet. Hier steht jeder geänderte Text, wie er bis 1.40.1 war, und wie er jetzt heißt. Die ganze alte Fassung steht in `extension/assets/i18n.js` im Commit `557cceb` (Version 1.40.1).
 
 Entfernt: `cd_small` (wurde nirgends angezeigt). Neu: `cd_back` und `cd_break` (Knöpfe auf den Sperr- und Pausenseiten).
 
