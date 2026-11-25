@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.41.1
+- Unblocker detection knows “Fern” and “Cherry” (only together with words like proxy, unblocked or links, so “fern plant care” stays fine).
+
 ## 1.41.0
 - **German texts reworked.** One word per meaning: the tab brake now says “ausgebremst” instead of “gesperrt”, the settings lock is “Einstellungsschutz”, “Warteraum” everywhere, buttons start with a capital letter, one kind of dash, no English words where German has one. Loosening always reads “Lockerung gilt in einer Stunde”. The previous German wording, key by key: [docs/texts-before-1.41.md](docs/texts-before-1.41.md).
 - **Block and cooldown pages:** two new buttons under the question: “Back to your last tab” (only when there is one that isn’t a block page) and “Take a break” (five minutes, right on the page).
