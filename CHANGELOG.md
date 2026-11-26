@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.42.0
+- **Unblockers that hide in a closed shadow root** (Fern, Cherri): Tab Guard now looks inside shadow roots, closed ones too, so their address bar, buttons and frames count again. Before, such a page looked empty to Tab Guard.
+- **New signs of an unblocker:** an address bar showing the site's own scheme (`fern://home`, `cherri://newtab`), a tab icon borrowed from another site (for example through Google's favicon service), and titles like “Dashboard | Coursera” on a site that isn't Coursera.
+
 ## 1.41.1
 - Unblocker detection knows “Fern” and “Cherry” (only together with words like proxy, unblocked or links, so “fern plant care” stays fine).
 
