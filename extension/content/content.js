@@ -1746,8 +1746,12 @@ setInterval(tgCheckGuards, 800);
     const lib = bpLib(); if (!lib) return null;
     const host = location.hostname, why = [];
     let s = 0;
+    // look inside shadow roots too, closed ones included (Fern, Cherri)
+    const rs = lib.roots ? lib.roots(document) : [document];
+    const deep = (sel) => (lib.qsaDeep ? lib.qsaDeep(sel, document, rs) : [...document.querySelectorAll(sel)]);
+    if (rs.length > 1 && lib.closedShell && lib.closedShell(document)) { s += 1; why.push("closedShell"); }
     if (lib.isProxyUrl(location.href)) { s += 6; why.push("proxyUrl"); }
-    for (const f of document.querySelectorAll("iframe[src],frame[src],embed[src],object[data]")) {
+    for (const f of deep("iframe[src],frame[src],embed[src],object[data]")) {
       const src = f.getAttribute("src") || f.getAttribute("data") || "";
       let abs = src; try { abs = new URL(src, location.href).href; } catch (_) {}
       let same = false; try { same = new URL(abs).origin === location.origin; } catch (_) {}
@@ -1757,8 +1761,8 @@ setInterval(tgCheckGuards, 800);
     const isSvgDoc = root && root.namespaceURI === "http://www.w3.org/2000/svg";
     if (isSvgDoc && root.querySelector("script, foreignObject")) { s += lib.isBypassLink(location.href) ? 3 : 2; why.push("svgApp"); }
     const meta = (sel) => { const m = document.querySelector(sel); return m ? m.getAttribute("content") || "" : ""; };
-    const heads = [...document.querySelectorAll("h1,h2,h3")].slice(0, 12).map(h => h.textContent).join(" ");
-    const labels = [...document.querySelectorAll("button,a,[role=button],[aria-label],nav *")].slice(0, 400)
+    const heads = deep("h1,h2,h3").slice(0, 12).map(h => h.textContent).join(" ");
+    const labels = deep("button,a,[role=button],[aria-label],nav *").slice(0, 400)
       .map(e => (e.getAttribute && (e.getAttribute("aria-label") || e.getAttribute("data-tab-label") || e.getAttribute("title"))) || (e.children.length ? "" : e.textContent || ""))
       .map(x => String(x).trim().toLowerCase()).filter(x => x && x.length < 30);
     const title = document.title || "";
@@ -1766,7 +1770,12 @@ setInterval(tgCheckGuards, 800);
     const ts = Math.min(4, lib.score(text) + (lib.score(title) >= 2 ? 1 : 0));
     if (ts) { s += ts; why.push("text" + ts); }
     if (lib.titleCloak(title, host)) { s += 2; why.push("cloak"); }
-    const barInput = [...document.querySelectorAll("input")].find(i => lib.looksLikeUrlBar(i.getAttribute("placeholder") || ""));
+    const icon = lib.iconCloak ? lib.iconCloak(document, host) : "";
+    if (icon) { s += 2; why.push("iconCloak:" + icon); }
+    const inputs = deep("input");
+    // an address bar showing the site's own scheme: fern://home, cherri://newtab
+    if (lib.fakeScheme && inputs.some(i => lib.fakeScheme(i.value || i.getAttribute("value") || ""))) { s += 4; why.push("fakeScheme"); }
+    const barInput = inputs.find(i => lib.looksLikeUrlBar(i.getAttribute("placeholder") || "") || /^(address|url|address bar|search or enter address)$/i.test((i.getAttribute("aria-label") || "").trim()));
     if (barInput) {
       s += 2; why.push("urlBar");
       // back / forward / reload buttons next to it: a browser inside the page
@@ -1778,7 +1787,7 @@ setInterval(tgCheckGuards, 800);
       }).length;
       if (nav >= 2) { s += 2; why.push("navButtons"); }
       // a tab strip with a "new tab" button: a whole browser inside the page
-      const newTab = [...document.querySelectorAll("button,[role=button],a,div")].slice(0, 600).some(b => {
+      const newTab = deep("button,[role=button],a,div").slice(0, 600).some(b => {
         const l = ((b.getAttribute("title") || "") + " " + (b.getAttribute("aria-label") || "") + " " + (b.id || "")).toLowerCase();
         return /\bnew ?tab\b|^newtab$|\bnewtab\b/.test(l.trim());
       });
@@ -1809,7 +1818,7 @@ setInterval(tgCheckGuards, 800);
       .map(e => e.getAttribute("data-src") || e.getAttribute("data-page") || e.getAttribute("data-url") || e.getAttribute("data-href") || e.getAttribute("data-frame") || "")
       .filter(v => /^(\.?\/)?[\w-]+(\.html?)?([?#].*)?$/i.test(v) && !/^\d+$/.test(v));
     const swapSet = new Set(swaps.map(v => v.replace(/^\.?\//, "")));
-    const shell = swapSet.size >= 4 && [...document.querySelectorAll("iframe[src]")].some(f => swapSet.has((f.getAttribute("src") || "").replace(/^\.?\//, "")));
+    const shell = swapSet.size >= 4 && deep("iframe[src]").some(f => swapSet.has((f.getAttribute("src") || "").replace(/^\.?\//, "")));
     if (shell) {
       s += 3; why.push("iframeShell");
       // …dressed up as a school tool

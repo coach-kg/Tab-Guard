@@ -112,11 +112,76 @@
     if (!t) return false;
     return /\/hvtrs8/i.test(u.pathname) || MARKER.test(u.pathname);
   }
+  // ---- shadow DOM -------------------------------------------------------------
+  // Some unblockers (Fern, Cherri) put the whole app inside a CLOSED shadow
+  // root, so document.querySelectorAll finds no input, no button, no frame.
+  // Extensions may look inside: chrome.dom.openOrClosedShadowRoot (Chrome),
+  // element.openOrClosedShadowRoot (Firefox).
+  function shadowOf(el) {
+    try { if (typeof chrome !== "undefined" && chrome.dom && chrome.dom.openOrClosedShadowRoot) return chrome.dom.openOrClosedShadowRoot(el) || null; } catch (_) {}
+    try { if ("openOrClosedShadowRoot" in el) return el.openOrClosedShadowRoot || null; } catch (_) {}
+    try { return el.shadowRoot || null; } catch (_) { return null; }
+  }
+  // the elements that may carry a shadow root, besides custom elements
+  const SHADOW_OK = new Set(["article", "aside", "blockquote", "body", "div", "footer", "h1", "h2", "h3", "h4", "h5", "h6", "header", "main", "nav", "p", "section", "span"]);
+  // The document plus every shadow root in it (nested too), with a budget.
+  function roots(doc, max) {
+    doc = doc || document; max = max || 6000;
+    const out = [doc], todo = [doc];
+    let seen = 0;
+    while (todo.length && seen < max) {
+      const r = todo.shift();
+      for (const el of r.querySelectorAll("*")) {
+        if (++seen > max) break;
+        const sr = (el.localName.includes("-") || SHADOW_OK.has(el.localName)) ? shadowOf(el) : null;
+        if (sr && !out.includes(sr)) { out.push(sr); todo.push(sr); }
+      }
+    }
+    return out;
+  }
+  function qsaDeep(sel, doc, rs) {
+    const all = [];
+    for (const r of (rs || roots(doc))) { try { all.push(...r.querySelectorAll(sel)); } catch (_) {} }
+    return all;
+  }
+  // The app hidden in a closed shadow root that makes up the whole page.
+  function closedShell(doc) {
+    doc = doc || document;
+    const kids = [...(doc.body ? doc.body.children : [])].filter(e => !/^(script|style|noscript|link|template)$/.test(e.localName));
+    if (kids.length < 1 || kids.length > 3) return false;
+    return kids.some(e => { let open = null; try { open = e.shadowRoot; } catch (_) {} const any = shadowOf(e); return !!any && !open && any.querySelector("input,iframe,button"); });
+  }
+  // An address bar that shows the site's own scheme: fern://home, cherri://newtab …
+  const FAKE_SCHEME = /^([a-z][a-z0-9+.-]{1,24}):\/\/(home|newtab|new-tab|new|start|startpage|settings|history|bookmarks|games|apps|search|about|welcome)\b/i;
+  const REAL_SCHEMES = /^(https?|ftp|file|about|chrome|edge|brave|opera|vivaldi|moz-extension|chrome-extension|data|blob|view-source|ws|wss|mailto|tel|sms|spotify|steam|zoommtg|slack|discord|msteams|itms-apps|vscode|obsidian|notion|figma|tg|whatsapp|webcal)$/i;
+  function fakeScheme(v) {
+    const m = String(v || "").trim().match(FAKE_SCHEME);
+    return !!m && !REAL_SCHEMES.test(m[1]);
+  }
+  // A tab icon borrowed from another site (often via Google's favicon service).
+  function iconCloak(doc, host) {
+    doc = doc || document; host = String(host || "").toLowerCase().replace(/^www\./, "");
+    for (const l of doc.querySelectorAll('link[rel~="icon" i],link[rel="shortcut icon" i],link[rel="apple-touch-icon" i]')) {
+      const href = l.getAttribute("href") || "";
+      let u; try { u = new URL(href, doc.baseURI); } catch (_) { continue; }
+      const via = /(^|\.)google\.com$/.test(u.hostname) && /\/s2\/favicons/.test(u.pathname) ? (u.searchParams.get("domain") || u.searchParams.get("domain_url") || "")
+        : /(^|\.)(gstatic\.com|duckduckgo\.com|icons\.duckduckgo\.com)$/.test(u.hostname) && /favicon|\/ip3\//.test(u.href) ? u.href.replace(/^.*\/(ip3\/)?/, "").replace(/\.ico.*$/, "") : "";
+      if (!via) continue;
+      let other = via.toLowerCase(); try { other = new URL(/^https?:/.test(via) ? via : "https://" + via).hostname.toLowerCase(); } catch (_) {}
+      other = other.replace(/^www\./, "");
+      if (other && host && other !== host && !host.endsWith("." + other) && !other.endsWith("." + host)) return other;
+    }
+    return "";
+  }
+
   // Pages pretending to be a school tool in the tab title.
   const CLOAK = /^(home\s*[-|–]\s*)?(google\s+)?(classroom|docs|drive|my drive|ixl|clever|canvas|schoology|khan academy|quizlet|google|google docs|google drive|desmos)(\s*[-|–]\s*(home|google))?$/i;
-  const CLOAK_HOSTS = /(^|\.)(google\.com|ixl\.com|clever\.com|instructure\.com|schoology\.com|khanacademy\.org|quizlet\.com|desmos\.com)$/;
+  // "Dashboard | Coursera", "Home | Schoology", "Courses - Canvas" …
+  const CLOAK2 = /^(dashboard|home|my courses|courses|my learning|classes|assignments|to ?do|stream|inbox)\s*[-|–:]\s*(coursera|canvas|schoology|powerschool|edpuzzle|khan academy|ixl|clever|google classroom|classroom|quizlet|brainpop|nearpod|kahoot!?|blooket|gimkit|deltamath|duolingo|savvas|mcgraw hill)$/i;
+  const CLOAK_HOSTS = /(^|\.)(google\.com|ixl\.com|clever\.com|instructure\.com|schoology\.com|khanacademy\.org|quizlet\.com|desmos\.com|coursera\.org|powerschool\.com|edpuzzle\.com|brainpop\.com|nearpod\.com|kahoot\.(com|it)|blooket\.com|gimkit\.com|deltamath\.com|duolingo\.com|savvas\.com|savvasrealize\.com|mheducation\.com)$/;
   function titleCloak(title, host) {
-    return CLOAK.test(String(title || "").trim()) && !CLOAK_HOSTS.test(String(host || "").toLowerCase());
+    const t = String(title || "").trim();
+    return (CLOAK.test(t) || CLOAK2.test(t)) && !CLOAK_HOSTS.test(String(host || "").toLowerCase());
   }
   // What to remember for a found site. On shared hosts (code CDNs, Google
   // Sites, buckets, Apps Script) that is the path of that one project, never
@@ -251,5 +316,5 @@
     });
   }
 
-  self.TGBypass = { KNOWN, norm, score, isBypassLink, embeddedTarget, isProxyUrl, titleCloak, siteKey, paramTargets, isFramedProxy, looksLikeUrlBar, engineMarks, engineDatabases, fileHits };
+  self.TGBypass = { roots, qsaDeep, closedShell, fakeScheme, iconCloak, KNOWN, norm, score, isBypassLink, embeddedTarget, isProxyUrl, titleCloak, siteKey, paramTargets, isFramedProxy, looksLikeUrlBar, engineMarks, engineDatabases, fileHits };
 })();
