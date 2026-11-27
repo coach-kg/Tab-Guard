@@ -150,7 +150,7 @@ async function persist() {
   });
 }
 
-startTouchGrassLink(() => !!(cfg && !cfg.enabled), () => (cfg && cfg.pausedUntil) || 0);
+startTouchGrassLink(() => !!(cfg && !cfg.enabled), () => (cfg && cfg.pausedUntil) || 0, () => cfg);
 
 chrome.runtime.onInstalled.addListener(ensureConfig);
 // a short introduction right after installing (not on updates)

@@ -78,7 +78,7 @@ No account, no server, no analytics. Settings, lists and counters stay in your b
 
 Tab Guard stands on its own. For people who also use [Touch Grass](https://github.com/coach-kg/touchgrass-mac), the blocker that unlocks once you have been outside, there is a hidden switch under **Settings → Experimental → Connect with Touch Grass**. With it, the Touch Grass Mac app can require Tab Guard in every browser and close browsers that run without it.
 
-Switching it on asks for the optional `nativeMessaging` permission. Tab Guard then tells the Mac app every few seconds that it is running, how many windows it sees and whether it may run in private windows. Nothing else, and nothing leaves the computer. Without the switch none of this code runs. Code: [`extension/src/touchGrass.js`](extension/src/touchGrass.js).
+Switching it on asks for the optional `nativeMessaging` permission. Tab Guard then tells the Mac app every few seconds that it is running, how many windows it sees and whether it may run in private windows. With Touch Grass 60 or later the two also share the names of the sites on their block lists (proxies and adult sites they caught, your blocklist), so a proxy caught in the browser is blocked in every app too. Nothing leaves the computer. Without the switch none of this code runs. Code: [`extension/src/touchGrass.js`](extension/src/touchGrass.js).
 
 Step by step: [Connect Tab Guard with Touch Grass](docs/touch-grass.md)
 

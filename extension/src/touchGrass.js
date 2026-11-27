@@ -39,6 +39,17 @@ export const ANDROID_ORIGINS = ["http://127.0.0.1/*"];
 const ANDROID_MIN_GAP_MS = 10000;   // at most one beat per 10 s, however many tabs pulse
 const ANDROID_TIMEOUT_MS = 3000;
 
+// ---- learned sites, shared with Touch Grass for Mac (desktop only) ----------
+// docs/tasks/touch-grass-learned-sync.md. Only host names, only over the
+// native messaging port, only while "Connect with Touch Grass" is on.
+const SYNC_REMOVED_KEY = "tabguardSyncRemoved";   // hosts the user removed: never take them back
+const SYNC_MIN_MS = 60000;                        // at most one "learned" message a minute
+const SYNC_TOTAL_MAX = 20000;
+const BYPASS_CAP = 2000, EXTRA_CAP = 5000;
+const TOMB_DAYS = 90;
+let getCfg = () => null;
+let lastSent = 0, sendTimer = null;
+
 let port = null;
 let beatTimer = null;
 let retryTimer = null;
@@ -128,7 +139,10 @@ async function connect() {
   try { port = chrome.runtime.connectNative(HOST); }
   catch (e) { port = null; setStatus("missing", { error: String(e && e.message || e).slice(0, 200) }); retryLater(); return; }
   port.onMessage.addListener((m) => {
-    if (m && m.t === "state") setStatus("connected", { macUnlocked: !!m.unlocked });
+    if (m && m.t === "state") {
+      setStatus("connected", { macUnlocked: !!m.unlocked });
+      if (m.found && typeof m.found === "object") mergeFound(m.found).catch(() => {});
+    }
   });
   port.onDisconnect.addListener(() => {
     // the browser's own reason ("host not found", "access forbidden", "exited")
@@ -141,16 +155,120 @@ async function connect() {
   });
   beat();
   beatTimer = setInterval(beat, BEAT_MS);
+  lastSent = 0;
+  setTimeout(sendLearned, 1500);       // once right after connecting, when the config is loaded
 }
 
 function disconnect() {
   clearInterval(beatTimer);
+  clearTimeout(sendTimer);
   clearTimeout(retryTimer);
   beatTimer = null;
   if (port) { try { port.disconnect(); } catch (_) {} }
   port = null;
   setPulse(false);
   setStatus("off");
+}
+
+// ---- learned sites -----------------------------------------------------------
+
+/** A plain host from a list entry, or "" for entries with a path or pattern. */
+function plainHost(e) {
+  let h = String(e || "").trim().toLowerCase();
+  if (!h) return "";
+  h = h.replace(/^https?:\/\//, "").replace(/\/+$/, "");
+  if (h.includes("/") || /[*?\s]/.test(h.replace(/^\*\./, ""))) return "";
+  h = h.replace(/^\*\./, "").replace(/^www\./, "").replace(/\.$/, "");
+  return /^[a-z0-9.-]+\.[a-z0-9-]{2,}$/.test(h) ? h : "";
+}
+function uniqHosts(list) {
+  const out = [], seen = new Set();
+  for (const e of Array.isArray(list) ? list : []) { const h = plainHost(e); if (h && !seen.has(h)) { seen.add(h); out.push(h); } }
+  return out;
+}
+function protections(c) {
+  const ab = (c && c.adultBlock) || {};
+  return { adult: !!ab.enabled, proxy: !!ab.enabled && ab.bypass !== false };
+}
+
+/** What Tab Guard sends: only lists whose protection is on; the blocklist always. */
+export function learnedMessage(c) {
+  const ab = (c && c.adultBlock) || {}, on = protections(c);
+  const msg = { t: "learned" };
+  let room = SYNC_TOTAL_MAX;
+  const take = (list) => { const l = list.slice(-room); room -= l.length; return l; };   // newest win
+  msg.blocked = take(uniqHosts(c && c.blocklist));
+  if (on.proxy) msg.proxy = take(uniqHosts(ab.bypassSites));
+  if (on.adult) msg.adult = take(uniqHosts(ab.extraHosts));
+  return msg;
+}
+
+function sendLearned() {
+  clearTimeout(sendTimer);
+  if (!port) return;
+  const c = getCfg();
+  if (!c) { sendTimer = setTimeout(sendLearned, 2000); return; }
+  try { port.postMessage(learnedMessage(c)); lastSent = Date.now(); } catch (_) {}
+}
+function scheduleSend() {
+  if (!port) return;
+  clearTimeout(sendTimer);
+  sendTimer = setTimeout(sendLearned, Math.max(0, lastSent + SYNC_MIN_MS - Date.now()));
+}
+
+async function tombstones() {
+  const now = Date.now(), keep = {};
+  let t = {};
+  try { t = (await chrome.storage.local.get(SYNC_REMOVED_KEY))[SYNC_REMOVED_KEY] || {}; } catch (_) {}
+  for (const [h, at] of Object.entries(t)) if (now - at < TOMB_DAYS * 864e5) keep[h] = at;
+  return keep;
+}
+
+/** Hosts the user removed from a list (not ones dropped by the cap). */
+async function noteRemovals(oldC, newC) {
+  const gone = [];
+  for (const [path, cap] of [["bypassSites", BYPASS_CAP], ["extraHosts", EXTRA_CAP]]) {
+    const before = uniqHosts(oldC && oldC.adultBlock && oldC.adultBlock[path]);
+    const after = uniqHosts(newC && newC.adultBlock && newC.adultBlock[path]);
+    if (!before.length) continue;
+    const now = new Set(after);
+    const missing = before.filter(h => !now.has(h));
+    if (!missing.length) continue;
+    // the cap drops the oldest entries when a new one comes in: that is not a removal
+    const rawAfter = (newC.adultBlock[path] || []).length;
+    if (rawAfter >= cap && missing.every(h => before.indexOf(h) < missing.length)) continue;
+    gone.push(...missing);
+  }
+  if (!gone.length) return;
+  const t = await tombstones();
+  for (const h of gone) t[h] = Date.now();
+  try { await chrome.storage.local.set({ [SYNC_REMOVED_KEY]: t }); } catch (_) {}
+}
+
+/** What the Mac's own page check found, into Tab Guard's lists. Adds only. */
+async function mergeFound(found) {
+  // the first reply can come while the background is still loading its config
+  let eff = getCfg();
+  for (let i = 0; !eff && i < 60; i++) { await new Promise(r => setTimeout(r, 250)); eff = getCfg(); }
+  if (!eff) return;
+  const on = protections(eff);
+  const removed = await tombstones();
+  const c = (await chrome.storage.local.get("tabguardConfig")).tabguardConfig || {};
+  const ab = { ...(c.adultBlock || {}) };
+  let changed = false;
+  const add = (path, hosts, cap) => {
+    const list = Array.isArray(ab[path]) ? ab[path] : [];
+    const have = new Set(uniqHosts(list));
+    const fresh = uniqHosts(hosts).filter(h => !have.has(h) && !removed[h]);
+    if (!fresh.length) return;
+    ab[path] = [...list, ...fresh].slice(-cap);
+    changed = true;
+  };
+  if (on.proxy) add("bypassSites", found.proxy, BYPASS_CAP);
+  if (on.adult) add("extraHosts", found.adult, EXTRA_CAP);
+  if (!changed) return;
+  c.adultBlock = ab;
+  await chrome.storage.local.set({ tabguardConfig: c });
 }
 
 // ---- Android: a small local HTTP call ---------------------------------------
@@ -210,9 +328,24 @@ function matchesAndroid(p) {
  * Called once from background.js. `paused` reports whether protection is
  * paused, `until` when that pause ends (ms, 0 = no end set).
  */
-export function startTouchGrassLink(paused, until) {
+export function startTouchGrassLink(paused, until, config) {
   if (typeof paused === "function") isPaused = paused;
   if (typeof until === "function") pausedUntil = until;
+  if (typeof config === "function") getCfg = config;
+  // learned lists changed: remember removals, send the new lists (desktop)
+  chrome.storage.onChanged.addListener((c, area) => {
+    if (area !== "local" || !c.tabguardConfig) return;
+    noteRemovals(c.tabguardConfig.oldValue, c.tabguardConfig.newValue).catch(() => {});
+    // a protection was switched on: reconnect, so the Mac sends its finds once more
+    const was = protections(c.tabguardConfig.oldValue), now = protections(c.tabguardConfig.newValue);
+    if (port && ((now.proxy && !was.proxy) || (now.adult && !was.adult))) {
+      try { port.disconnect(); } catch (_) {}
+      port = null; clearInterval(beatTimer); beatTimer = null;
+      setTimeout(connect, 2000);       // after the background has taken the new config
+      return;
+    }
+    scheduleSend();
+  });
   chrome.permissions?.onAdded?.addListener((p) => {
     if (p.permissions?.includes("nativeMessaging") || matchesAndroid(p)) connect();
   });

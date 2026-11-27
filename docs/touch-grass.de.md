@@ -98,7 +98,11 @@ Kann Touch Grass nicht prüfen, sperrt es nichts: Schutz aus, Port 47823 von ein
 
 ## Was Tab Guard sendet
 
-Alle paar Sekunden: eine zufällige Kennung für das Browser-Profil, die Zahl der Fenster, ob es in privaten Fenstern laufen darf, ob es pausiert ist, und die Version. Keine Adressen, keine Seitentitel. Native Messaging erreicht nur ein Programm auf diesem Computer, nichts geht übers Netz. Auf Android geht dasselbe, ohne die Fensterzahl, an `127.0.0.1:47823` auf dem Handy und verlässt es nicht. Ohne den Schalter läuft dieser Code nicht: [`extension/src/touchGrass.js`](../extension/src/touchGrass.js).
+Alle paar Sekunden: eine zufällige Kennung für das Browser-Profil, die Zahl der Fenster, ob es in privaten Fenstern laufen darf, ob es pausiert ist, und die Version. Keine Adressen, keine Seitentitel.
+
+**Gelernte Seiten (Mac, ab 1.43.0):** Touch Grass für Mac ab Version 60 hat einen Netz-Wächter, der Proxys und Erwachsenen-Seiten in jeder App sperrt. Tab Guard teilt mit ihm höchstens einmal pro Minute die *Namen* der Seiten auf seinen Listen: erkannte Proxys (nur wenn die Proxy-Sperre des Jugendschutzes an ist), gelernte Erwachsenen-Seiten (nur wenn der Jugendschutz an ist) und deine eigene Sperrliste. Keine Pfade, keine Seiten, die du nur besucht hast, kein Verlauf. Umgekehrt übernimmt Tab Guard, was Touch Grass selbst als Proxy oder Erwachsenen-Seite erkannt hat, aber nur in Schutzfunktionen, die an sind, und nie eine Seite, die du in Tab Guard entfernt hast. Beides bleibt auf diesem Computer.
+
+Native Messaging erreicht nur ein Programm auf diesem Computer, nichts geht übers Netz. Auf Android geht dasselbe, ohne die Fensterzahl, an `127.0.0.1:47823` auf dem Handy und verlässt es nicht. Ohne den Schalter läuft dieser Code nicht: [`extension/src/touchGrass.js`](../extension/src/touchGrass.js).
 
 ---
 

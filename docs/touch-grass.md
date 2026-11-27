@@ -94,7 +94,11 @@ If Touch Grass can't check, it blocks nothing: protection off, port 47823 taken 
 
 ## What Tab Guard sends
 
-Every few seconds: a random id for the browser profile, the number of windows, whether it may run in private windows, whether it is paused, and its version. No addresses, no page titles. Native messaging only reaches a program on this computer, nothing goes over the network. On Android the same, without the window count, goes to `127.0.0.1:47823` on the phone, nothing leaves it. Without the switch this code doesn't run: [`extension/src/touchGrass.js`](../extension/src/touchGrass.js).
+Every few seconds: a random id for the browser profile, the number of windows, whether it may run in private windows, whether it is paused, and its version. No addresses, no page titles.
+
+**Learned sites (Mac, from 1.43.0):** Touch Grass for Mac 60 and later has a network guard that blocks proxies and adult sites in every app. Tab Guard shares with it, at most once a minute, the *names* of the sites on its lists: proxies it caught (only while the content filter's bypass block is on), adult sites it learned (only while the content filter is on), and your own blocklist. No paths, no pages you merely visited, no history. In return Tab Guard takes over the proxies and adult sites Touch Grass found itself, but only into protections that are on, and never a site you removed in Tab Guard. Both stay on this computer.
+
+Native messaging only reaches a program on this computer, nothing goes over the network. On Android the same, without the window count, goes to `127.0.0.1:47823` on the phone, nothing leaves it. Without the switch this code doesn't run: [`extension/src/touchGrass.js`](../extension/src/touchGrass.js).
 
 ---
 

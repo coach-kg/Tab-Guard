@@ -897,6 +897,13 @@ Object.assign(fr, {"cd_back":"Revenir au dernier onglet","cd_break":"Faire une p
 Object.assign(es, {"cd_back":"Volver a la última pestaña","cd_break":"Tomar un descanso"});
 Object.assign(ro, {"cd_back":"Înapoi la ultima filă","cd_break":"Ia o pauză"});
 
+// 1.43.0: sharing learned sites with Touch Grass for Mac
+Object.assign(en, { o_n_tgShare: 'Shares learned sites with Touch Grass in both directions: only the site names, only on this computer. Sites you remove here stay removed.' });
+Object.assign(de, { o_n_tgShare: 'Teilt gelernte Seiten mit Touch Grass, in beide Richtungen: nur die Namen der Seiten, nur auf diesem Computer. Was du hier entfernst, bleibt entfernt.' });
+Object.assign(fr, { o_n_tgShare: 'Partage les sites appris avec Touch Grass, dans les deux sens : seulement les noms des sites, seulement sur cet ordinateur. Ce que tu retires ici reste retiré.' });
+Object.assign(es, { o_n_tgShare: 'Comparte los sitios aprendidos con Touch Grass en ambos sentidos: solo los nombres de los sitios, solo en este ordenador. Lo que quites aquí no vuelve.' });
+Object.assign(ro, { o_n_tgShare: 'Împarte site-urile învățate cu Touch Grass, în ambele sensuri: doar numele site-urilor, doar pe acest computer. Ce elimini aici rămâne eliminat.' });
+
 export const MESSAGES = { en, de, fr, es, ro };
 export const SUPPORTED = ["en", "de", "fr", "es", "ro"];
 
