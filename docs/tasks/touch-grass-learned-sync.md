@@ -1,6 +1,6 @@
 # Task: share learned sites with Touch Grass for Mac (Tab Guard 1.43.0)
 
-Status: open. Written 27.11.2026 from the Touch Grass for Mac side, which is already done (touchgrass-mac version 60). This file is the whole brief; nothing else is needed to start.
+Status: done in 1.43.0 (see the end of this file). Was open. Written 27.11.2026 from the Touch Grass for Mac side, which is already done (touchgrass-mac version 60). This file is the whole brief; nothing else is needed to start.
 
 ## Why
 
@@ -72,3 +72,10 @@ The `state` reply to a heartbeat gets an extra key **only when the Mac's list ch
 ## Mac side, for reference
 
 `coach-kg/touchgrass-mac`: `Sources/TouchGrass/NativeHost.swift` (receives `learned`, adds `found`), `Sources/TGCore/Learned.swift` (merge rules, tested in `Tests/TGCoreTests/NetGuardTests.swift`), plan in `docs/ideas/tab-guard-systemweit.md` (part A).
+
+## Done (1.43.0)
+
+- `src/touchGrass.js`: `learnedMessage()` builds the message (newest first under the 20,000 cap, plain hosts only), sent 1.5 s after connecting and then at most once a minute after list changes. `mergeFound()` adds `found` into `bypassSites` (cap 2,000) and `extraHosts` (cap 5,000) only while that protection is on. Removals are remembered in `tabguardSyncRemoved` for 90 days; entries dropped by a cap don't count as removals.
+- Settings: one line under **Connect with Touch Grass**, hidden on Android.
+- Docs: touch-grass (EN/DE), privacy policy (EN/DE), README, permissions, store kit.
+- Tested with a stand-in native host in Chromium (not with the real Mac app).

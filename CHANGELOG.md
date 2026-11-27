@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.43.0
+- **Learned sites go to Touch Grass for Mac, and back.** With “Connect with Touch Grass” on and Touch Grass 60 or later, Tab Guard shares the names of the sites on its lists (caught proxies, learned adult sites, your blocklist) at most once a minute, so the Mac's network guard blocks them in every app. What the Mac's own check finds comes back into Tab Guard's lists, only into protections that are on, and a site you removed never comes back. Only host names, only on this computer. Details: [docs/touch-grass.md](docs/touch-grass.md#what-tab-guard-sends).
+
 ## 1.42.0
 - **Unblockers that hide in a closed shadow root** (Fern, Cherri): Tab Guard now looks inside shadow roots, closed ones too, so their address bar, buttons and frames count again. Before, such a page looked empty to Tab Guard.
 - **New signs of an unblocker:** an address bar showing the site's own scheme (`fern://home`, `cherri://newtab`), a tab icon borrowed from another site (for example through Google's favicon service), and titles like “Dashboard | Coursera” on a site that isn't Coursera.

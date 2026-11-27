@@ -703,6 +703,7 @@ async function tgRefresh() {
     : TG_ANDROID ? "tg_st_missingAndroid" : "tg_st_missing";
   $("tgLinkStatus").textContent = t(LANG, key) + (granted && st?.state !== "connected" && st?.error ? ` (${st.error})` : "");
   if (granted) $("expBox").open = true;
+  if ($("tgShare")) $("tgShare").hidden = TG_ANDROID;     // sharing lists needs the Mac app
 }
 $("tgLink")?.addEventListener("change", (e) => {
   // The request has to happen inside the click, with nothing awaited before it.

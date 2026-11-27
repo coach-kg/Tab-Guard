@@ -19,7 +19,7 @@ Your settings and lists (trusted sites, blocklist, redirects, your own search te
 - No network requests of its own, no cookies, no fingerprinting, no advertising IDs.
 - No sign-up and no personal data required.
 - No selling, sharing or transfer of any data to anyone, and no use for any purpose other than the extension's own features.
-- **Optional, experimental: Touch Grass.** Only if you switch on “Connect with Touch Grass” under Settings → Experimental, Tab Guard talks to the Touch Grass app on the same computer through the browser's native messaging. Every few seconds it sends a random id for the browser profile, the number of windows it sees, whether it may run in private windows, whether protection is paused, and its version. No addresses, titles or browsing data, and nothing leaves the computer. Switching it off ends it and gives the permission back.
+- **Optional, experimental: Touch Grass.** Only if you switch on “Connect with Touch Grass” under Settings → Experimental, Tab Guard talks to the Touch Grass app on the same computer through the browser's native messaging. Every few seconds it sends a random id for the browser profile, the number of windows it sees, whether it may run in private windows, whether protection is paused, and its version. On a Mac with Touch Grass 60 or later it also shares the names of the sites on Tab Guard's own lists (proxies it caught, adult sites it learned, your blocklist), so Touch Grass can block them in other apps, and it takes over sites Touch Grass found. No paths, no history, no titles, and nothing leaves the computer. Switching it off ends it and gives the permission back.
 
 ## Deleting your data
 
@@ -53,7 +53,7 @@ Deine Einstellungen und Listen (vertraute Seiten, Blockliste, Weiterleitungen, e
 - Keine eigenen Netzwerkanfragen, keine Cookies, kein Fingerprinting, keine Werbe-IDs.
 - Keine Anmeldung, keine persönlichen Daten nötig.
 - Kein Verkauf, keine Weitergabe und keine Übertragung von Daten an irgendwen, und keine Nutzung für andere Zwecke als die Funktionen der Erweiterung.
-- **Optional, experimentell: Touch Grass.** Nur wenn du unter Einstellungen → Experimentell „Mit Touch Grass verbinden“ einschaltest, spricht Tab Guard über das Native Messaging des Browsers mit der Touch-Grass-App auf demselben Computer. Alle paar Sekunden schickt es eine zufällige Kennung für das Browser-Profil, die Zahl der Fenster, die es sieht, ob es in privaten Fenstern laufen darf, ob der Schutz pausiert ist, und seine Version. Keine Adressen, Titel oder Surfdaten, und nichts verlässt den Computer. Ausschalten beendet das und gibt die Berechtigung zurück.
+- **Optional, experimentell: Touch Grass.** Nur wenn du unter Einstellungen → Experimentell „Mit Touch Grass verbinden“ einschaltest, spricht Tab Guard über das Native Messaging des Browsers mit der Touch-Grass-App auf demselben Computer. Alle paar Sekunden schickt es eine zufällige Kennung für das Browser-Profil, die Zahl der Fenster, die es sieht, ob es in privaten Fenstern laufen darf, ob der Schutz pausiert ist, und seine Version. Auf einem Mac mit Touch Grass ab Version 60 teilt es außerdem die Namen der Seiten auf Tab Guards eigenen Listen (erkannte Proxys, gelernte Erwachsenen-Seiten, deine Sperrliste), damit Touch Grass sie auch in anderen Apps sperren kann, und übernimmt Seiten, die Touch Grass erkannt hat. Keine Pfade, kein Verlauf, keine Titel, und nichts verlässt den Computer. Ausschalten beendet das und gibt die Berechtigung zurück.
 
 ## Daten löschen
 
